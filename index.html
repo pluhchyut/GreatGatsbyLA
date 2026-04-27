@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Green Light — A Poem for Jay Gatsby</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Locomotive Scroll CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css"
+  />
+
+  <!-- Project CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Three.js + import map -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Loading screen -->
+  <div id="loader" aria-hidden="true">
+    <div class="loader-inner">
+      <div class="loader-orb"></div>
+      <p class="loader-text">setting the table…</p>
+    </div>
+  </div>
+
+  <!-- Persistent Three.js canvas (fixed behind everything) -->
+  <canvas id="three-canvas"></canvas>
+
+  <!-- Vignette + grain overlays for atmosphere -->
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- Scroll progress indicator -->
+  <div class="progress-rail" aria-hidden="true">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <!-- Chapter marker (top right) -->
+  <div class="chapter-marker" aria-hidden="true">
+    <span id="chapter-roman">I</span>
+    <span class="chapter-divider"></span>
+    <span id="chapter-name">longing</span>
+  </div>
+
+  <!-- Locomotive Scroll container -->
+  <main id="scroll-container" data-scroll-container>
+    <!-- Sections injected by main.js -->
+  </main>
+
+  <!-- Locomotive Scroll JS -->
+  <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js"></script>
+
+  <!-- App entry -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
