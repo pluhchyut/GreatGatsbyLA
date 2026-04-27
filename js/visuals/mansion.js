@@ -1,6 +1,6 @@
-// Gatsby's mansion: a vast silhouette across the night, every window lit,
-// every room empty. Built from extruded shapes so it reads as a "great house"
-// rather than a generic box — towers, gables, a long colonnade.
+// Gatsby's mansion: stately, overlit, and a little haunted.
+// This scene favors architectural silhouette and believable, uneven window life
+// rather than a flat blinking facade.
 
 import * as THREE from 'three';
 
@@ -8,67 +8,77 @@ export class MansionScene {
   constructor(scene) {
     this.scene = scene;
     this.group = new THREE.Group();
+    this.intensity = 0;
+    this.progress = 0;
 
-    // --- Starfield ---
     const starGeo = new THREE.BufferGeometry();
     const starCount = 600;
     const starPos = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount; i++) {
+    for (let i = 0; i < starCount; i += 1) {
       starPos[i * 3 + 0] = (Math.random() - 0.5) * 80;
-      starPos[i * 3 + 1] =  Math.random() * 30 + 4;
+      starPos[i * 3 + 1] = Math.random() * 30 + 4;
       starPos[i * 3 + 2] = -30 - Math.random() * 20;
     }
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-    const starMat = new THREE.PointsMaterial({
+    this.starMat = new THREE.PointsMaterial({
       color: 0xfff4d0,
       size: 0.06,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0,
       sizeAttenuation: true,
     });
-    this.stars = new THREE.Points(starGeo, starMat);
+    this.stars = new THREE.Points(starGeo, this.starMat);
 
-    // --- Moon ---
+    const skyTex = this._radialTex('rgba(24,38,62,0.9)', 'rgba(7,16,28,0)');
+    this.skyGlowMat = new THREE.SpriteMaterial({
+      map: skyTex,
+      color: 0x314766,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+    this.skyGlow = new THREE.Sprite(this.skyGlowMat);
+    this.skyGlow.position.set(0, 9.5, -25);
+    this.skyGlow.scale.set(44, 22, 1);
+
     const moonGeo = new THREE.CircleGeometry(1.6, 48);
-    const moonMat = new THREE.MeshBasicMaterial({ color: 0xf4e9d8 });
-    this.moon = new THREE.Mesh(moonGeo, moonMat);
+    this.moonMat = new THREE.MeshBasicMaterial({
+      color: 0xf4e9d8,
+      transparent: true,
+      opacity: 0,
+    });
+    this.moon = new THREE.Mesh(moonGeo, this.moonMat);
     this.moon.position.set(-9, 9, -25);
 
     const moonHaloTex = this._radialTex('rgba(244,233,216,0.9)', 'rgba(244,233,216,0)');
-    this.moonHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+    this.moonHaloMat = new THREE.SpriteMaterial({
       map: moonHaloTex,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-    }));
+    });
+    this.moonHalo = new THREE.Sprite(this.moonHaloMat);
     this.moonHalo.scale.setScalar(7);
     this.moonHalo.position.copy(this.moon.position);
 
-    // --- Mansion silhouette built from a 2D shape ---
-    // We model a long manor: central tower with cupola, two flanking wings.
     const shape = new THREE.Shape();
-    // start at left ground
     shape.moveTo(-9, 0);
-    // left wing
     shape.lineTo(-9, 1.4);
     shape.lineTo(-7.2, 1.4);
     shape.lineTo(-7.2, 2.0);
     shape.lineTo(-5.4, 2.0);
     shape.lineTo(-5.4, 1.4);
     shape.lineTo(-4.0, 1.4);
-    // central block rises
     shape.lineTo(-4.0, 2.4);
     shape.lineTo(-2.6, 2.4);
-    // central tower
     shape.lineTo(-2.6, 3.6);
     shape.lineTo(-1.6, 3.6);
-    // cupola peak
     shape.lineTo(-1.6, 4.0);
     shape.lineTo(-1.2, 4.0);
-    shape.lineTo(-0.9, 4.6); // peak rising
+    shape.lineTo(-0.9, 4.6);
     shape.lineTo(-0.6, 5.1);
-    shape.lineTo(-0.3, 5.4); // tip
+    shape.lineTo(-0.3, 5.4);
     shape.lineTo(0.0, 5.6);
     shape.lineTo(0.3, 5.4);
     shape.lineTo(0.6, 5.1);
@@ -76,7 +86,6 @@ export class MansionScene {
     shape.lineTo(1.2, 4.0);
     shape.lineTo(1.6, 4.0);
     shape.lineTo(1.6, 3.6);
-    // mirror right side
     shape.lineTo(2.6, 3.6);
     shape.lineTo(2.6, 2.4);
     shape.lineTo(4.0, 2.4);
@@ -89,16 +98,16 @@ export class MansionScene {
     shape.lineTo(9, 0);
     shape.lineTo(-9, 0);
 
-    const mansionGeo = new THREE.ExtrudeGeometry(shape, {
-      depth: 2.0,
-      bevelEnabled: false,
+    const mansionGeo = new THREE.ExtrudeGeometry(shape, { depth: 2.0, bevelEnabled: false });
+    mansionGeo.translate(0, 0, -1.0);
+    this.mansionMat = new THREE.MeshBasicMaterial({
+      color: 0x010306,
+      transparent: true,
+      opacity: 0,
     });
-    mansionGeo.translate(0, 0, -1.0); // center on z
-    const mansionMat = new THREE.MeshBasicMaterial({ color: 0x010306 });
-    this.mansion = new THREE.Mesh(mansionGeo, mansionMat);
+    this.mansion = new THREE.Mesh(mansionGeo, this.mansionMat);
     this.mansion.position.set(0, 0.3, -14);
 
-    // --- Lit windows (small glowing rectangles in front of the silhouette) ---
     this.windows = new THREE.Group();
     const windowDefs = [
       // [x, y, w, h, brightness 0-1]
@@ -141,39 +150,67 @@ export class MansionScene {
       const wm = new THREE.MeshBasicMaterial({
         color: 0xf0cf65,
         transparent: true,
-        opacity: 0.75 + bright * 0.25,
+        opacity: 0,
       });
       const win = new THREE.Mesh(wg, wm);
-      win.position.set(x, y + 0.05, -13.0); // in front of mansion
+      win.position.set(x, y + 0.05, -13.0);
       win.userData.bright = bright;
       win.userData.seed = Math.random() * Math.PI * 2;
+      win.userData.currentDip = 1;
+      win.userData.targetDip = 1;
+      win.userData.nextShift = Math.random() * 1.4;
       this.windows.add(win);
       this.windowMeshes.push(win);
     });
 
-    // Warm glow halo over the whole mansion
     const glowTex = this._radialTex('rgba(240,207,101,0.5)', 'rgba(240,207,101,0)');
-    this.mansionGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+    this.mansionGlowMat = new THREE.SpriteMaterial({
       map: glowTex,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-    }));
+    });
+    this.mansionGlow = new THREE.Sprite(this.mansionGlowMat);
     this.mansionGlow.scale.set(28, 16, 1);
     this.mansionGlow.position.set(0, 1.8, -13.5);
 
-    // --- Ground/lawn (a dark plane) ---
     const lawnGeo = new THREE.PlaneGeometry(60, 40);
-    const lawnMat = new THREE.MeshBasicMaterial({ color: 0x030608 });
-    this.lawn = new THREE.Mesh(lawnGeo, lawnMat);
+    this.lawnMat = new THREE.MeshBasicMaterial({
+      color: 0x030608,
+      transparent: true,
+      opacity: 0,
+    });
+    this.lawn = new THREE.Mesh(lawnGeo, this.lawnMat);
     this.lawn.rotation.x = -Math.PI / 2;
-    this.lawn.position.y = 0.0;
     this.lawn.position.z = -8;
 
+    this.terraceLights = new THREE.Group();
+    for (let i = 0; i < 6; i += 1) {
+      const lamp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: glowTex,
+        color: 0xf0cf65,
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }));
+      lamp.scale.set(1.2, 1.2, 1);
+      lamp.position.set(-5 + i * 2.0, 0.4 + (i % 2) * 0.05, -11.2);
+      lamp.userData.seed = Math.random() * Math.PI * 2;
+      this.terraceLights.add(lamp);
+    }
+
     this.group.add(
-      this.stars, this.moonHalo, this.moon,
-      this.mansionGlow, this.mansion, this.windows, this.lawn,
+      this.skyGlow,
+      this.stars,
+      this.moonHalo,
+      this.moon,
+      this.mansionGlow,
+      this.mansion,
+      this.windows,
+      this.terraceLights,
+      this.lawn,
     );
     this.group.visible = false;
     scene.add(this.group);
@@ -194,19 +231,47 @@ export class MansionScene {
     return t;
   }
 
+  setState({ intensity = 0, progress = 0 } = {}) {
+    this.intensity = intensity;
+    this.progress = progress;
+    this.group.visible = intensity > 0.002;
+  }
+
   show() { this.group.visible = true; }
   hide() { this.group.visible = false; }
 
   update(t) {
     if (!this.group.visible) return;
-    // Window flicker — each window pulses independently, hinting at parties inside
-    this.windowMeshes.forEach(w => {
-      const flick = 0.85 + Math.sin(t * 1.4 + w.userData.seed) * 0.15
-                  + (Math.random() < 0.005 ? -0.4 : 0);
-      w.material.opacity = (0.6 + w.userData.bright * 0.4) * flick;
+
+    this.starMat.opacity = this.intensity * (0.58 + Math.sin(t * 0.45) * 0.05);
+    this.skyGlowMat.opacity = this.intensity * 0.17;
+    this.moonMat.opacity = this.intensity * 0.95;
+    this.moonHaloMat.opacity = this.intensity * 0.36;
+    this.mansionMat.opacity = this.intensity;
+    this.mansionGlowMat.opacity = this.intensity * (0.18 + this.progress * 0.2);
+    this.lawnMat.opacity = this.intensity * 0.96;
+
+    this.windowMeshes.forEach((window) => {
+      if (t > window.userData.nextShift) {
+        window.userData.targetDip = Math.random() < 0.12 ? 0.42 + Math.random() * 0.22 : 1.0;
+        window.userData.nextShift = t + 0.25 + Math.random() * 1.8;
+      }
+
+      window.userData.currentDip += (window.userData.targetDip - window.userData.currentDip) * 0.08;
+      const flicker = 0.88 + Math.sin(t * 1.4 + window.userData.seed) * 0.12;
+      const breath = 0.96 + Math.sin(t * 0.4 + window.userData.seed * 1.7) * 0.05;
+      const opacity = (0.52 + window.userData.bright * 0.42) * flicker * breath * window.userData.currentDip;
+      window.material.opacity = opacity * this.intensity;
     });
-    // Star twinkle
-    this.stars.material.opacity = 0.75 + Math.sin(t * 0.8) * 0.1;
+
+    this.terraceLights.children.forEach((lamp) => {
+      lamp.material.opacity = this.intensity * (0.09 + Math.sin(t * 1.25 + lamp.userData.seed) * 0.03);
+      lamp.scale.setScalar(1.1 + Math.sin(t * 0.9 + lamp.userData.seed) * 0.08);
+    });
+
+    this.moon.position.y = 9 + Math.sin(t * 0.12) * 0.2;
+    this.moonHalo.position.copy(this.moon.position);
+    this.group.position.x = Math.sin(t * 0.08) * 0.05;
   }
 
   dispose() {

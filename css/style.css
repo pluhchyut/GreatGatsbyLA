@@ -18,6 +18,7 @@
   --font-display: 'Cinzel', serif;
   --font-body:    'Playfair Display', serif;
   --font-quote:   'Cormorant Garamond', serif;
+  --font-mono:    'Space Mono', monospace;
 }
 
 * {
@@ -56,11 +57,40 @@ html.has-scroll-dragging { user-select: none; }
 /* ============================================
    ATMOSPHERIC OVERLAYS
    ============================================ */
+.scanlines,
+.grid-overlay,
 .vignette {
   position: fixed;
   inset: 0;
-  z-index: 2;
   pointer-events: none;
+}
+
+.scanlines {
+  z-index: 2;
+  opacity: 0.18;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.035) 0,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  mix-blend-mode: soft-light;
+}
+
+.grid-overlay {
+  z-index: 3;
+  opacity: 0.18;
+  background:
+    linear-gradient(to right, rgba(77, 255, 170, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(212, 175, 55, 0.05) 1px, transparent 1px);
+  background-size: 120px 120px;
+  mask-image: radial-gradient(circle at center, black 45%, transparent 95%);
+}
+
+.vignette {
+  z-index: 4;
   background:
     radial-gradient(ellipse at center,
       transparent 40%,
@@ -71,7 +101,7 @@ html.has-scroll-dragging { user-select: none; }
 .grain {
   position: fixed;
   inset: 0;
-  z-index: 3;
+  z-index: 5;
   pointer-events: none;
   opacity: 0.08;
   mix-blend-mode: overlay;
@@ -103,6 +133,10 @@ html.has-scroll-dragging { user-select: none; }
   flex-direction: column;
   align-items: center;
   gap: 2rem;
+  padding: 2rem 2.4rem;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  background: rgba(3, 7, 13, 0.45);
+  box-shadow: 0 0 0 1px rgba(77, 255, 170, 0.06) inset;
 }
 
 .loader-orb {
@@ -131,17 +165,107 @@ html.has-scroll-dragging { user-select: none; }
   color: var(--cream-dim);
 }
 
+.loader-status {
+  max-width: 34rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(244, 233, 216, 0.54);
+}
+
+/* ============================================
+   FIXED UI CHROME
+   ============================================ */
+.top-rail {
+  position: fixed;
+  top: 1.4rem;
+  left: 1.5rem;
+  right: 1.5rem;
+  z-index: 25;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  pointer-events: none;
+}
+
+.top-rail::before {
+  content: '';
+  position: absolute;
+  top: -0.7rem;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, rgba(212, 175, 55, 0.28), transparent 35%, transparent 65%, rgba(212, 175, 55, 0.28));
+}
+
+.top-rail-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  padding-top: 0.2rem;
+}
+
+.top-rail-block--right {
+  text-align: right;
+}
+
+.rail-label,
+.side-label,
+.chapter-kicker,
+.chapter-code,
+.poem-meta,
+.quote-meta,
+.hero-interface {
+  font-family: var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.rail-label {
+  font-size: 0.58rem;
+  color: rgba(244, 233, 216, 0.46);
+}
+
+.rail-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(240, 207, 101, 0.86);
+}
+
+.side-label {
+  position: fixed;
+  top: 50%;
+  z-index: 24;
+  font-size: 0.54rem;
+  color: rgba(244, 233, 216, 0.34);
+  writing-mode: vertical-rl;
+  transform: translateY(-50%);
+}
+
+.side-label--left {
+  left: 1rem;
+}
+
+.side-label--right {
+  right: 0.9rem;
+}
+
 /* ============================================
    SCROLL PROGRESS RAIL
    ============================================ */
 .progress-rail {
   position: fixed;
   top: 50%;
-  right: 2.2rem;
+  right: 2.3rem;
   transform: translateY(-50%);
-  width: 1px;
-  height: 38vh;
-  background: rgba(212, 175, 55, 0.18);
+  width: 2px;
+  height: 40vh;
+  background: linear-gradient(to bottom, rgba(212, 175, 55, 0.08), rgba(77, 255, 170, 0.08));
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.08);
   z-index: 20;
 }
 
@@ -150,10 +274,12 @@ html.has-scroll-dragging { user-select: none; }
   top: 0;
   left: 0;
   width: 100%;
-  height: 0%;
+  height: 100%;
   background: linear-gradient(to bottom, var(--gold-bright), var(--gold));
   box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
-  transition: height 0.1s linear;
+  transform: scaleY(0);
+  transform-origin: top center;
+  will-change: transform;
 }
 
 /* ============================================
@@ -161,23 +287,29 @@ html.has-scroll-dragging { user-select: none; }
    ============================================ */
 .chapter-marker {
   position: fixed;
-  top: 2rem;
+  top: 4.4rem;
   right: 2rem;
   z-index: 20;
   display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  font-family: var(--font-display);
-  font-size: 0.7rem;
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  color: var(--gold);
-  opacity: 0.7;
-  transition: opacity 0.6s ease;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.55rem;
+  min-width: 13rem;
+  padding: 1rem 1.1rem 0.95rem;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  background: linear-gradient(180deg, rgba(4, 12, 18, 0.82), rgba(4, 12, 18, 0.52));
+  box-shadow:
+    0 0 0 1px rgba(77, 255, 170, 0.05) inset,
+    0 18px 48px rgba(0, 0, 0, 0.32);
+  opacity: 0.88;
+  transition: opacity 0.6s ease, transform 0.6s ease;
 }
 
 #chapter-roman {
-  font-size: 0.9rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.4em;
+  color: var(--gold-bright);
 }
 
 .chapter-divider {
@@ -185,6 +317,74 @@ html.has-scroll-dragging { user-select: none; }
   height: 1px;
   background: var(--gold);
   opacity: 0.6;
+}
+
+.chapter-mainline {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.chapter-kicker {
+  font-size: 0.54rem;
+  color: rgba(244, 233, 216, 0.42);
+}
+
+.chapter-code {
+  font-size: 0.56rem;
+  color: rgba(77, 255, 170, 0.66);
+}
+
+.shot-monitor {
+  position: fixed;
+  left: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 22;
+  width: min(28rem, calc(100vw - 5rem));
+  padding: 1rem 1.1rem 1.05rem;
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  background: linear-gradient(180deg, rgba(4, 11, 18, 0.82), rgba(4, 11, 18, 0.56));
+  box-shadow:
+    0 0 0 1px rgba(77, 255, 170, 0.04) inset,
+    0 18px 48px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
+.shot-monitor-label {
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(244, 233, 216, 0.42);
+}
+
+.shot-monitor-title {
+  margin-top: 0.45rem;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  line-height: 1.45;
+  color: rgba(244, 233, 216, 0.92);
+}
+
+.shot-monitor-divider {
+  width: 100%;
+  height: 1px;
+  margin: 0.85rem 0 0.8rem;
+  background: linear-gradient(to right, rgba(212, 175, 55, 0.42), transparent);
+}
+
+.shot-monitor-copy {
+  margin-top: 0.45rem;
+  font-family: var(--font-quote);
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: rgba(201, 189, 166, 0.9);
 }
 
 /* ============================================
@@ -207,6 +407,34 @@ html.has-scroll-dragging { user-select: none; }
   text-align: center;
 }
 
+.hero::before,
+.hero::after {
+  content: '';
+  position: absolute;
+  left: 8vw;
+  right: 8vw;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.3), transparent);
+  opacity: 0.5;
+}
+
+.hero::before { top: 17vh; }
+.hero::after { bottom: 18vh; }
+
+.hero-interface {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1.6rem;
+  justify-content: center;
+  font-size: 0.55rem;
+  color: rgba(244, 233, 216, 0.42);
+}
+
+.hero-interface--top { top: 12vh; }
+.hero-interface--bottom { bottom: 12vh; }
+
 .hero-eyebrow {
   font-family: var(--font-quote);
   font-style: italic;
@@ -217,6 +445,7 @@ html.has-scroll-dragging { user-select: none; }
   margin-bottom: 2.5rem;
   opacity: 0;
   animation: fade-up 1.6s 0.4s ease forwards;
+  will-change: transform, opacity;
 }
 
 .hero-title {
@@ -231,6 +460,7 @@ html.has-scroll-dragging { user-select: none; }
     0 2px 0 rgba(0, 0, 0, 0.4);
   opacity: 0;
   animation: fade-up 1.8s 0.9s ease forwards;
+  will-change: transform, opacity;
 }
 
 .hero-title .amp {
@@ -251,6 +481,7 @@ html.has-scroll-dragging { user-select: none; }
   color: var(--cream-dim);
   opacity: 0;
   animation: fade-up 1.8s 1.5s ease forwards;
+  will-change: transform, opacity;
 }
 
 .hero-flourish {
@@ -261,6 +492,7 @@ html.has-scroll-dragging { user-select: none; }
     transparent, var(--gold), transparent);
   opacity: 0;
   animation: fade-in 2s 2s ease forwards;
+  will-change: opacity;
 }
 
 .hero-scroll-cue {
@@ -275,6 +507,7 @@ html.has-scroll-dragging { user-select: none; }
   color: var(--gold);
   opacity: 0;
   animation: fade-in 2s 2.6s ease forwards, bob 2.4s 3s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 @keyframes fade-up {
@@ -299,6 +532,54 @@ html.has-scroll-dragging { user-select: none; }
   padding: 0 8vw;
 }
 
+.poem-shell {
+  position: relative;
+  max-width: 38rem;
+  padding: 1.4rem 1.6rem 1.6rem;
+  border: 1px solid rgba(212, 175, 55, 0.12);
+  background: linear-gradient(180deg, rgba(7, 16, 28, 0.14), rgba(7, 16, 28, 0.05));
+  box-shadow: 0 0 0 1px rgba(77, 255, 170, 0.04) inset;
+}
+
+.poem-shell::before {
+  content: '';
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-left: 1px solid rgba(77, 255, 170, 0.5);
+  border-top: 1px solid rgba(77, 255, 170, 0.5);
+}
+
+.poem-shell::after {
+  content: '';
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.65rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 1px solid rgba(212, 175, 55, 0.42);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.42);
+}
+
+.poem-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.55rem;
+  color: rgba(244, 233, 216, 0.44);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 1s ease, transform 1s ease;
+  will-change: transform, opacity;
+}
+
+.poem-meta.is-inview {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .poem-line {
   font-family: var(--font-body);
   font-weight: 400;
@@ -310,11 +591,23 @@ html.has-scroll-dragging { user-select: none; }
   opacity: 0;
   transform: translateY(40px);
   transition: opacity 1.2s ease, transform 1.2s ease;
+  will-change: transform, opacity;
 }
 
 /* Alternate line alignment for visual rhythm */
-.poem-section:nth-child(odd)  .poem-line { margin-left: auto;  text-align: right; }
-.poem-section:nth-child(even) .poem-line { margin-right: auto; text-align: left; }
+.poem-section:nth-child(odd) .poem-shell {
+  margin-left: auto;
+}
+
+.poem-section:nth-child(odd) .poem-line,
+.poem-section:nth-child(odd) .poem-meta {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+.poem-section:nth-child(even) .poem-shell {
+  margin-right: auto;
+}
 
 .poem-line.is-inview {
   opacity: 1;
@@ -339,14 +632,34 @@ html.has-scroll-dragging { user-select: none; }
   padding: 0 12vw;
 }
 
+.quote-meta {
+  position: absolute;
+  top: 50%;
+  left: 12vw;
+  display: flex;
+  gap: 1rem;
+  font-size: 0.54rem;
+  color: rgba(244, 233, 216, 0.34);
+  opacity: 0;
+  transform: translateY(-50%) translateX(-18px);
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+.quote-meta.is-inview {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
 .quote-block {
   max-width: 32ch;
   position: relative;
   padding: 2rem 2.5rem;
   border-left: 1px solid rgba(212, 175, 55, 0.4);
+  background: rgba(4, 11, 18, 0.26);
   opacity: 0;
   transform: translateX(-20px);
   transition: opacity 1.2s ease, transform 1.2s ease;
+  will-change: transform, opacity;
 }
 
 .quote-block.is-inview {
@@ -387,6 +700,11 @@ html.has-scroll-dragging { user-select: none; }
 
 /* Even quote sections push to right */
 .quote-section.align-right { justify-content: flex-end; }
+.quote-section.align-right .quote-meta {
+  left: auto;
+  right: 12vw;
+  justify-content: flex-end;
+}
 .quote-section.align-right .quote-block {
   border-left: none;
   border-right: 1px solid rgba(212, 175, 55, 0.4);
@@ -418,6 +736,7 @@ html.has-scroll-dragging { user-select: none; }
   opacity: 0;
   transform: translateY(30px);
   transition: opacity 1.6s ease, transform 1.6s ease;
+  will-change: transform, opacity;
 }
 
 .end-mark.is-inview {
@@ -434,6 +753,7 @@ html.has-scroll-dragging { user-select: none; }
   color: var(--cream-dim);
   opacity: 0;
   transition: opacity 1.6s 0.6s ease;
+  will-change: opacity;
 }
 
 .end-credit.is-inview {
@@ -465,9 +785,23 @@ html.has-scroll-dragging { user-select: none; }
    RESPONSIVE
    ============================================ */
 @media (max-width: 720px) {
+  .top-rail,
+  .side-label {
+    display: none;
+  }
+  .shot-monitor {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    width: auto;
+  }
   .progress-rail { right: 1rem; height: 30vh; }
-  .chapter-marker { top: 1.2rem; right: 1.2rem; font-size: 0.6rem; }
+  .chapter-marker { top: 1.2rem; right: 1.2rem; min-width: auto; padding: 0.8rem 0.9rem; }
   .poem-section, .quote-section { padding: 0 6vw; }
+  .poem-shell { width: 100%; padding: 1.1rem 1.1rem 1.25rem; }
   .poem-line { font-size: 1.7rem; max-width: none; text-align: left !important; margin: 0 !important; }
+  .poem-meta { justify-content: flex-start !important; text-align: left !important; flex-wrap: wrap; }
+  .quote-meta { position: static; margin-bottom: 1rem; transform: none !important; opacity: 1; }
   .quote-block { padding: 1.4rem 1.6rem; }
+  .hero-interface { width: calc(100% - 3rem); gap: 0.8rem; flex-wrap: wrap; }
 }

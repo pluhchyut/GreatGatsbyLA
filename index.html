@@ -4,12 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Green Light — A Poem for Jay Gatsby</title>
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='10' fill='%234dffaa'/%3E%3C/svg%3E"
+  />
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400;700&display=swap"
     rel="stylesheet"
   />
 
@@ -37,6 +41,7 @@
     <div class="loader-inner">
       <div class="loader-orb"></div>
       <p class="loader-text">setting the table…</p>
+      <div class="loader-status" id="loader-status">bootrom // west egg archive // preparing scene memory</div>
     </div>
   </div>
 
@@ -44,8 +49,24 @@
   <canvas id="three-canvas"></canvas>
 
   <!-- Vignette + grain overlays for atmosphere -->
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
+
+  <div class="top-rail" aria-hidden="true">
+    <div class="top-rail-block">
+      <span class="rail-label">west egg archive</span>
+      <span class="rail-title">the green light</span>
+    </div>
+    <div class="top-rail-block top-rail-block--right">
+      <span class="rail-label" id="system-code">SH-01 // shoreline</span>
+      <span class="rail-title">locomotive scroll / three.js</span>
+    </div>
+  </div>
+
+  <div class="side-label side-label--left" aria-hidden="true">long island // summer 1922 // recovered transmission</div>
+  <div class="side-label side-label--right" aria-hidden="true">scroll to advance // all visuals procedural // no images</div>
 
   <!-- Scroll progress indicator -->
   <div class="progress-rail" aria-hidden="true">
@@ -54,9 +75,21 @@
 
   <!-- Chapter marker (top right) -->
   <div class="chapter-marker" aria-hidden="true">
-    <span id="chapter-roman">I</span>
-    <span class="chapter-divider"></span>
-    <span id="chapter-name">longing</span>
+    <span class="chapter-kicker">chapter protocol</span>
+    <div class="chapter-mainline">
+      <span id="chapter-roman">I</span>
+      <span class="chapter-divider"></span>
+      <span id="chapter-name">shoreline</span>
+    </div>
+    <span class="chapter-code" id="chapter-code">SH-01</span>
+  </div>
+
+  <div class="shot-monitor" aria-hidden="true">
+    <div class="shot-monitor-label">current shot</div>
+    <div class="shot-monitor-title" id="shot-title">wide shot of a glowing shoreline at dusk, light stretching across the water</div>
+    <div class="shot-monitor-divider"></div>
+    <div class="shot-monitor-label">transition</div>
+    <div class="shot-monitor-copy" id="shot-transition">the water ripples, and the reflection bleeds upward into the sky</div>
   </div>
 
   <!-- Locomotive Scroll container -->
