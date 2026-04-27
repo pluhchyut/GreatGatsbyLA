@@ -1,0 +1,19 @@
+{
+  "name": "gatsby-poem",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A scroll-driven poetic essay on The Great Gatsby, built with Locomotive Scroll and Three.js. All visuals are code-generated.",
+  "keywords": [
+    "three.js",
+    "locomotive-scroll",
+    "gatsby",
+    "poetry",
+    "scrollytelling",
+    "webgl"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "start": "python3 -m http.server 8000"
+  }
+}

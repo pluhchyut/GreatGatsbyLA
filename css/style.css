@@ -1,0 +1,473 @@
+/* ============================================
+   THE GREEN LIGHT — A Poem for Jay Gatsby
+   ============================================ */
+
+:root {
+  --navy-deep:   #07101c;
+  --navy:        #0a1929;
+  --navy-soft:   #122236;
+  --gold:        #d4af37;
+  --gold-bright: #f0cf65;
+  --gold-soft:   #8a7228;
+  --green-light: #1fb87a;
+  --green-glow:  #4dffaa;
+  --cream:       #f4e9d8;
+  --cream-dim:   #c9bda6;
+  --ink:         #03070d;
+
+  --font-display: 'Cinzel', serif;
+  --font-body:    'Playfair Display', serif;
+  --font-quote:   'Cormorant Garamond', serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: var(--navy-deep);
+  color: var(--cream);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* Locomotive handles scroll */
+}
+
+html.has-scroll-smooth { overflow: hidden; }
+html.has-scroll-dragging { user-select: none; }
+.has-scroll-smooth body { overflow: hidden; }
+.has-scroll-smooth [data-scroll-container] {
+  min-height: 100vh;
+}
+
+/* ============================================
+   THREE.JS CANVAS (fixed background)
+   ============================================ */
+#three-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  display: block;
+}
+
+/* ============================================
+   ATMOSPHERIC OVERLAYS
+   ============================================ */
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center,
+      transparent 40%,
+      rgba(3, 7, 13, 0.55) 85%,
+      rgba(3, 7, 13, 0.85) 100%);
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>");
+}
+
+/* ============================================
+   LOADER
+   ============================================ */
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--navy-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 1.2s ease, visibility 1.2s ease;
+}
+
+#loader.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.loader-orb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--green-glow);
+  box-shadow:
+    0 0 20px var(--green-glow),
+    0 0 40px var(--green-light),
+    0 0 80px rgba(31, 184, 122, 0.4);
+  animation: pulse-orb 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-orb {
+  0%, 100% { transform: scale(1);   opacity: 1;   }
+  50%      { transform: scale(1.4); opacity: 0.6; }
+}
+
+.loader-text {
+  font-family: var(--font-quote);
+  font-style: italic;
+  font-size: 0.9rem;
+  letter-spacing: 0.3em;
+  text-transform: lowercase;
+  color: var(--cream-dim);
+}
+
+/* ============================================
+   SCROLL PROGRESS RAIL
+   ============================================ */
+.progress-rail {
+  position: fixed;
+  top: 50%;
+  right: 2.2rem;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 38vh;
+  background: rgba(212, 175, 55, 0.18);
+  z-index: 20;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(to bottom, var(--gold-bright), var(--gold));
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+  transition: height 0.1s linear;
+}
+
+/* ============================================
+   CHAPTER MARKER (top-right)
+   ============================================ */
+.chapter-marker {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.7;
+  transition: opacity 0.6s ease;
+}
+
+#chapter-roman {
+  font-size: 0.9rem;
+}
+
+.chapter-divider {
+  width: 24px;
+  height: 1px;
+  background: var(--gold);
+  opacity: 0.6;
+}
+
+/* ============================================
+   SCROLLING CONTENT
+   ============================================ */
+#scroll-container {
+  position: relative;
+  z-index: 10;
+}
+
+/* ---- Hero ---- */
+.hero {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2rem;
+  text-align: center;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-quote);
+  font-style: italic;
+  font-size: 0.95rem;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 2.5rem;
+  opacity: 0;
+  animation: fade-up 1.6s 0.4s ease forwards;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(3rem, 9vw, 7.5rem);
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--cream);
+  text-shadow:
+    0 0 40px rgba(31, 184, 122, 0.2),
+    0 2px 0 rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  animation: fade-up 1.8s 0.9s ease forwards;
+}
+
+.hero-title .amp {
+  display: inline-block;
+  margin: 0 0.4em;
+  color: var(--gold);
+  font-style: italic;
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+
+.hero-subtitle {
+  margin-top: 2.5rem;
+  font-family: var(--font-quote);
+  font-style: italic;
+  font-size: 1.15rem;
+  letter-spacing: 0.15em;
+  color: var(--cream-dim);
+  opacity: 0;
+  animation: fade-up 1.8s 1.5s ease forwards;
+}
+
+.hero-flourish {
+  margin-top: 3.5rem;
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(to right,
+    transparent, var(--gold), transparent);
+  opacity: 0;
+  animation: fade-in 2s 2s ease forwards;
+}
+
+.hero-scroll-cue {
+  position: absolute;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0;
+  animation: fade-in 2s 2.6s ease forwards, bob 2.4s 3s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, 8px); }
+}
+
+/* ---- Poem line section ---- */
+.poem-section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 0 8vw;
+}
+
+.poem-line {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 3.6vw, 3.2rem);
+  line-height: 1.35;
+  color: var(--cream);
+  max-width: 22ch;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+
+/* Alternate line alignment for visual rhythm */
+.poem-section:nth-child(odd)  .poem-line { margin-left: auto;  text-align: right; }
+.poem-section:nth-child(even) .poem-line { margin-right: auto; text-align: left; }
+
+.poem-line.is-inview {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Decorative drop-cap on first poem line of a stanza */
+.poem-line .drop {
+  font-family: var(--font-display);
+  font-size: 1.3em;
+  color: var(--gold);
+  font-style: normal;
+  margin-right: 0.05em;
+}
+
+/* ---- Quote section ---- */
+.quote-section {
+  position: relative;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  padding: 0 12vw;
+}
+
+.quote-block {
+  max-width: 32ch;
+  position: relative;
+  padding: 2rem 2.5rem;
+  border-left: 1px solid rgba(212, 175, 55, 0.4);
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+
+.quote-block.is-inview {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.quote-block::before {
+  content: '"';
+  position: absolute;
+  top: -1.2rem;
+  left: 1.2rem;
+  font-family: var(--font-quote);
+  font-size: 5rem;
+  line-height: 1;
+  color: var(--gold);
+  opacity: 0.5;
+}
+
+.quote-text {
+  font-family: var(--font-quote);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1.05rem, 1.6vw, 1.4rem);
+  line-height: 1.55;
+  color: var(--cream-dim);
+}
+
+.quote-cite {
+  display: block;
+  margin-top: 1.4rem;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* Even quote sections push to right */
+.quote-section.align-right { justify-content: flex-end; }
+.quote-section.align-right .quote-block {
+  border-left: none;
+  border-right: 1px solid rgba(212, 175, 55, 0.4);
+  text-align: right;
+}
+.quote-section.align-right .quote-block::before {
+  left: auto;
+  right: 1.2rem;
+}
+
+/* ---- End ---- */
+.end-section {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 2rem;
+}
+
+.end-mark {
+  font-family: var(--font-quote);
+  font-style: italic;
+  font-size: 2.5rem;
+  color: var(--gold);
+  letter-spacing: 0.4em;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 1.6s ease, transform 1.6s ease;
+}
+
+.end-mark.is-inview {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.end-credit {
+  margin-top: 3rem;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  opacity: 0;
+  transition: opacity 1.6s 0.6s ease;
+}
+
+.end-credit.is-inview {
+  opacity: 0.7;
+}
+
+/* Decorative Art Deco divider used between stanzas */
+.deco-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 0;
+  opacity: 0.6;
+}
+.deco-divider .bar {
+  width: 60px;
+  height: 1px;
+  background: var(--gold);
+}
+.deco-divider .diamond {
+  width: 8px;
+  height: 8px;
+  background: var(--gold);
+  transform: rotate(45deg);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 720px) {
+  .progress-rail { right: 1rem; height: 30vh; }
+  .chapter-marker { top: 1.2rem; right: 1.2rem; font-size: 0.6rem; }
+  .poem-section, .quote-section { padding: 0 6vw; }
+  .poem-line { font-size: 1.7rem; max-width: none; text-align: left !important; margin: 0 !important; }
+  .quote-block { padding: 1.4rem 1.6rem; }
+}
