@@ -13,7 +13,14 @@ const CHAPTER_INFO = {
   fade: { roman: 'VI', name: 'fade', code: 'FD-06' },
 };
 
-const SCENE_KEYS = Object.keys(CHAPTER_INFO);
+const VISUAL_KEYS = [
+  'greenLight',
+  'goldParticles',
+  'mansion',
+  'artDeco',
+  'vortex',
+  'boat',
+];
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -132,7 +139,7 @@ function boot() {
   const shotTransition = document.getElementById('shot-transition');
 
   const sectionsByScene = Object.fromEntries(
-    SCENE_KEYS.map((key) => [key, sectionEls.filter((el) => el.dataset.scene === key)]),
+    VISUAL_KEYS.map((key) => [key, sectionEls.filter((el) => el.dataset.scene === key)]),
   );
 
   // eslint-disable-next-line no-undef
@@ -172,12 +179,12 @@ function boot() {
     const vh = window.innerHeight;
     const center = vh * 0.5;
     const states = Object.fromEntries(
-      SCENE_KEYS.map((key) => [key, { intensity: 0, progress: 0, distance: Infinity }]),
+      VISUAL_KEYS.map((key) => [key, { intensity: 0, progress: 0, distance: Infinity }]),
     );
     let activeSection = sectionEls[0] || null;
     let activeDistance = Infinity;
 
-    SCENE_KEYS.forEach((key) => {
+    VISUAL_KEYS.forEach((key) => {
       const els = sectionsByScene[key];
       let bestInfluence = 0;
       let bestProgress = 0;
