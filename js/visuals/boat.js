@@ -11,7 +11,7 @@ export class BoatScene {
     this.intensity = 0;
     this.progress = 0;
 
-    const waterGeo = new THREE.PlaneGeometry(120, 120, 180, 180);
+    const waterGeo = new THREE.PlaneGeometry(120, 120, 56, 56);
     this.waterUniforms = {
       uTime: { value: 0 },
       uOpacity: { value: 0 },
@@ -32,10 +32,9 @@ export class BoatScene {
         void main() {
           vUv = uv;
           vec3 pos = position;
-          float w = sin(pos.x * 0.4 + uTime * 0.6) * 0.12;
-          w += sin(pos.y * 0.55 + uTime * 0.9) * 0.09;
-          w += sin((pos.x - pos.y) * 0.3 + uTime * 0.4) * 0.06;
-          w += sin(length(pos.xy) * 0.18 - uTime * 0.25) * 0.05 * (0.4 + uProgress * 0.6);
+          float w = sin(pos.x * 0.22 + uTime * 0.34) * 0.07;
+          w += sin(pos.y * 0.28 + uTime * 0.42) * 0.05;
+          w += sin((pos.x - pos.y) * 0.16 + uTime * 0.26) * 0.035 * (0.65 + uProgress * 0.35);
           pos.z += w;
           vWave = w;
           vec4 wp = modelMatrix * vec4(pos, 1.0);
@@ -48,12 +47,17 @@ export class BoatScene {
         uniform vec3 uColorShallow;
         uniform vec3 uFogColor;
         uniform float uOpacity;
+        uniform float uTime;
+        uniform float uProgress;
         varying vec2 vUv;
         varying float vWave;
         varying vec3 vWorldPos;
         void main() {
           vec3 col = mix(uColorDeep, uColorShallow, smoothstep(0.0, 1.0, vUv.y));
-          col += vec3(0.05, 0.07, 0.1) * smoothstep(0.05, 0.18, vWave);
+          float ripple = sin(vUv.y * 96.0 - uTime * 1.1) * sin(vUv.x * 28.0 + uTime * 0.45);
+          float glint = smoothstep(0.76, 1.0, ripple) * (0.05 + uProgress * 0.07);
+          col += vec3(0.05, 0.08, 0.1) * smoothstep(0.02, 0.12, vWave);
+          col += vec3(0.28, 0.55, 0.48) * glint;
           float distFog = 1.0 - exp(-length(vWorldPos.xz) * 0.04);
           col = mix(col, uFogColor, distFog);
           gl_FragColor = vec4(col, uOpacity);
@@ -141,7 +145,7 @@ export class BoatScene {
 
     const orbGeo = new THREE.SphereGeometry(0.24, 28, 28);
     this.farOrbMat = new THREE.MeshBasicMaterial({
-      color: 0xb8ffde,
+      color: 0x4dffaa,
       transparent: true,
       opacity: 0,
       fog: false,
@@ -163,7 +167,7 @@ export class BoatScene {
 
     this.pinLightMat = new THREE.SpriteMaterial({
       map: this._radialTex('rgba(255,255,255,0.98)', 'rgba(255,255,255,0)'),
-      color: 0x9dffda,
+      color: 0x4dffaa,
       transparent: true,
       opacity: 0,
       blending: THREE.AdditiveBlending,
@@ -286,7 +290,8 @@ export class BoatScene {
         uniform float uPixelRatio;
         void main() {
           vec3 p = position;
-          p.x += sin(uTime * 0.2 + aSeed * 6.28) * 1.5 + uTime * 0.4 * (aSeed - 0.5);
+          p.x += sin(uTime * 0.18 + aSeed * 6.28) * 1.1;
+          p.x += (fract(uTime * 0.035 + aSeed) - 0.5) * 7.0;
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
           gl_Position = projectionMatrix * mv;
           gl_PointSize = (8.0 + aSeed * 16.0) * 30.0 * uPixelRatio / -mv.z;
@@ -328,11 +333,15 @@ export class BoatScene {
     this.sailMat.opacity = this.intensity * 0.96;
     this.wakeMat.opacity = this.intensity * (0.16 + this.progress * 0.14);
     this.shorelineMat.opacity = this.intensity * 0.75;
-    this.farOrbMat.opacity = this.intensity * Math.min(1, 0.92 + this.progress * 0.65);
-    this.pinLightMat.opacity = this.intensity * (0.32 + this.progress * 0.6);
-    this.farHaloMat.opacity = this.intensity * Math.min(1, 0.56 + this.progress * 0.48);
-    this.horizonGlowMat.opacity = this.intensity * (0.18 + this.progress * 0.58);
-    this.reflectionMat.opacity = this.intensity * (0.14 + this.progress * 0.46);
+    const endPhase = smoothstepLocal(0.62, 1.0, this.progress);
+    const blink = smoothstepLocal(-0.45, 0.95, Math.sin(t * 4.4));
+    const blinkGlow = endPhase * blink;
+
+    this.farOrbMat.opacity = this.intensity * Math.min(1, 0.72 + this.progress * 0.28 + blinkGlow * 0.55);
+    this.pinLightMat.opacity = this.intensity * Math.min(1, 0.18 + this.progress * 0.34 + blinkGlow * 0.72);
+    this.farHaloMat.opacity = this.intensity * Math.min(1, 0.38 + this.progress * 0.34 + blinkGlow * 0.5);
+    this.horizonGlowMat.opacity = this.intensity * (0.12 + this.progress * 0.42 + blinkGlow * 0.26);
+    this.reflectionMat.opacity = this.intensity * (0.1 + this.progress * 0.34 + blinkGlow * 0.24);
     this.moonLight.intensity = this.intensity * 0.74;
     this.ambient.intensity = this.intensity * 0.42;
 
@@ -345,11 +354,11 @@ export class BoatScene {
     this.wake.position.y = 0.08 + Math.sin(t * 0.9 + 0.6) * 0.03;
     this.wake.scale.set(4.6 + this.progress * 1.1, 1.8 + this.progress * 0.6, 1);
 
-    const pulse = 0.96 + Math.sin(t * 1.35) * 0.08 + this.progress * 0.15;
-    this.farOrb.scale.setScalar(pulse * 0.72);
-    this.pinLight.scale.setScalar(1.25 + this.progress * 1.45 + Math.sin(t * 1.8) * 0.08);
-    this.farHalo.scale.setScalar((6.2 + this.progress * 2.8) * pulse);
-    this.horizonGlow.scale.set(13.5 + this.progress * 7.0, 8.2 + this.progress * 3.2, 1);
+    const pulse = 0.96 + Math.sin(t * 1.35) * 0.06 + this.progress * 0.12 + blinkGlow * 0.18;
+    this.farOrb.scale.setScalar(pulse * 0.7);
+    this.pinLight.scale.setScalar(1.0 + this.progress * 1.2 + blinkGlow * 1.05);
+    this.farHalo.scale.setScalar((5.8 + this.progress * 2.5 + blinkGlow * 1.8) * pulse);
+    this.horizonGlow.scale.set(12.8 + this.progress * 6.0 + blinkGlow * 3.0, 7.8 + this.progress * 2.8 + blinkGlow * 1.4, 1);
     this.horizonGlow.position.y = 1.24 + Math.sin(t * 0.7) * 0.03;
     this.reflection.scale.set(1.0 + this.progress * 0.75, 1.0 + this.progress * 0.38, 1);
     this.reflection.position.x = this.farOrb.position.x + Math.sin(t * 0.22) * 0.04;
@@ -370,4 +379,9 @@ export class BoatScene {
     });
     this.scene.remove(this.group);
   }
+}
+
+function smoothstepLocal(min, max, value) {
+  const x = THREE.MathUtils.clamp((value - min) / (max - min || 1), 0, 1);
+  return x * x * (3 - 2 * x);
 }

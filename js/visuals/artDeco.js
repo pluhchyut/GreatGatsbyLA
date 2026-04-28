@@ -1,5 +1,5 @@
-// Daisy is treated as a half-remembered presence: warm light, soft veils,
-// drifting bokeh, and a profile that never quite resolves into certainty.
+// Daisy is now a readable human memory: a soft figure in warm light, smiling
+// faintly and waving from a distance as if Gatsby can almost reach her.
 
 import * as THREE from 'three';
 
@@ -10,187 +10,182 @@ export class ArtDecoScene {
     this.intensity = 0;
     this.progress = 0;
 
-    this.ambient = new THREE.AmbientLight(0x203244, 0);
+    this.ambient = new THREE.AmbientLight(0x263142, 0);
     this.keyLight = new THREE.DirectionalLight(0xffefc8, 0);
-    this.keyLight.position.set(4, 5, 7);
+    this.keyLight.position.set(3.5, 5.0, 6.5);
     this.rimLight = new THREE.DirectionalLight(0xf0cf65, 0);
-    this.rimLight.position.set(-4, 2, -4);
-    this.coolFill = new THREE.DirectionalLight(0x4dffaa, 0);
-    this.coolFill.position.set(-6, 1, 5);
+    this.rimLight.position.set(-3.5, 2.5, -3.5);
+    this.greenFill = new THREE.DirectionalLight(0x4dffaa, 0);
+    this.greenFill.position.set(-5.0, 1.0, 4.0);
 
     this.backGlowMat = new THREE.SpriteMaterial({
-      map: this._radialTex('rgba(244,233,216,0.95)', 'rgba(244,233,216,0)'),
-      color: 0xb99136,
+      map: this._radialTex('rgba(244,233,216,0.85)', 'rgba(244,233,216,0)'),
+      color: 0xd8b15a,
       transparent: true,
       opacity: 0,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
     this.backGlow = new THREE.Sprite(this.backGlowMat);
-    this.backGlow.position.set(0.2, 1.65, -9.4);
-    this.backGlow.scale.set(16, 16, 1);
+    this.backGlow.position.set(0, 1.6, -8.6);
+    this.backGlow.scale.set(12, 12, 1);
 
-    this.coldHaloMat = new THREE.SpriteMaterial({
-      map: this._radialTex('rgba(77,255,170,0.75)', 'rgba(77,255,170,0)'),
-      color: 0x4dffaa,
+    this.figure = new THREE.Group();
+    this.figure.position.set(0.45, 1.05, -5.9);
+    this.figure.rotation.y = -0.28;
+
+    this.skinMat = new THREE.MeshStandardMaterial({
+      color: 0xf4d7ba,
+      roughness: 0.62,
       transparent: true,
       opacity: 0,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
     });
-    this.coldHalo = new THREE.Sprite(this.coldHaloMat);
-    this.coldHalo.position.set(-0.7, 1.45, -8.7);
-    this.coldHalo.scale.set(6.4, 6.4, 1);
-
-    this.memory = new THREE.Group();
-    this.memory.position.set(0, 1.35, -6.2);
-
-    this.profileMat = new THREE.MeshPhysicalMaterial({
-      color: 0xf4e9d8,
+    this.hairMat = new THREE.MeshStandardMaterial({
+      color: 0xd7b15a,
+      roughness: 0.75,
       transparent: true,
       opacity: 0,
-      roughness: 0.32,
-      metalness: 0.02,
-      transmission: 0.16,
-      thickness: 0.32,
-      emissive: 0x5a3e10,
-      emissiveIntensity: 0,
+    });
+    this.dressMat = new THREE.MeshStandardMaterial({
+      color: 0xf4e9d8,
+      roughness: 0.82,
+      transparent: true,
+      opacity: 0,
       side: THREE.DoubleSide,
     });
-
-    const profileGeo = new THREE.SphereGeometry(
-      1.28,
-      54,
-      54,
-      Math.PI * 0.17,
-      Math.PI * 1.04,
-      Math.PI * 0.18,
-      Math.PI * 0.74,
-    );
-    this.profile = new THREE.Mesh(profileGeo, this.profileMat);
-    this.profile.position.set(0.38, -0.04, 0.08);
-    this.profile.rotation.y = -0.92;
-    this.profile.rotation.z = 0.08;
-    this.profile.scale.set(0.68, 1.12, 0.46);
-
-    this.cheekGlowMat = new THREE.SpriteMaterial({
-      map: this._radialTex('rgba(255,242,212,0.85)', 'rgba(255,242,212,0)'),
+    this.shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x07101c,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+    });
+    this.goldLineMat = new THREE.LineBasicMaterial({
       color: 0xf0cf65,
       transparent: true,
       opacity: 0,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
     });
-    this.cheekGlow = new THREE.Sprite(this.cheekGlowMat);
-    this.cheekGlow.position.set(0.38, 0.22, 0.95);
-    this.cheekGlow.scale.set(1.8, 1.8, 1);
-    this.profile.add(this.cheekGlow);
+    this.greenLineMat = new THREE.LineBasicMaterial({
+      color: 0x4dffaa,
+      transparent: true,
+      opacity: 0,
+    });
 
-    this.eyeGlowMat = new THREE.SpriteMaterial({
-      map: this._radialTex('rgba(77,255,170,0.98)', 'rgba(77,255,170,0)'),
+    this.head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 32, 24), this.skinMat);
+    this.head.position.set(0, 1.48, 0);
+    this.head.scale.set(0.86, 1.02, 0.78);
+
+    this.hair = new THREE.Mesh(new THREE.SphereGeometry(0.38, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.56), this.hairMat);
+    this.hair.position.set(0, 1.58, -0.02);
+    this.hair.scale.set(0.96, 0.72, 0.78);
+    this.hair.rotation.x = 0.2;
+
+    const dressShape = new THREE.Shape();
+    dressShape.moveTo(-0.34, 0.98);
+    dressShape.bezierCurveTo(-0.74, 0.48, -0.9, -0.1, -1.0, -0.86);
+    dressShape.lineTo(0.96, -0.86);
+    dressShape.bezierCurveTo(0.86, -0.1, 0.68, 0.48, 0.34, 0.98);
+    dressShape.bezierCurveTo(0.18, 1.13, -0.18, 1.13, -0.34, 0.98);
+    const dressGeo = new THREE.ShapeGeometry(dressShape, 28);
+    this.dress = new THREE.Mesh(dressGeo, this.dressMat);
+    this.dress.position.set(0, 0.24, 0);
+    this.dress.scale.set(0.72, 0.86, 1);
+
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.22, 14), this.skinMat);
+    neck.position.set(0, 1.15, 0);
+
+    const armGeo = new THREE.CylinderGeometry(0.035, 0.042, 0.72, 12);
+    armGeo.translate(0, -0.36, 0);
+    this.leftArm = new THREE.Mesh(armGeo, this.skinMat);
+    this.leftArm.position.set(-0.42, 0.94, 0.02);
+    this.leftArm.rotation.z = -0.32;
+
+    this.wavePivot = new THREE.Group();
+    this.wavePivot.position.set(0.38, 0.94, 0.02);
+    this.rightArm = new THREE.Mesh(armGeo.clone(), this.skinMat);
+    this.rightArm.rotation.z = -2.38;
+    this.rightArm.rotation.x = 0.06;
+    this.wavePivot.add(this.rightArm);
+
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 10), this.skinMat);
+    palm.position.set(0, -0.74, 0.0);
+    this.rightArm.add(palm);
+
+    const eyeGeo = new THREE.SphereGeometry(0.018, 8, 8);
+    this.leftEye = new THREE.Mesh(eyeGeo, this.shadowMat);
+    this.leftEye.position.set(-0.095, 1.51, 0.285);
+    this.rightEye = new THREE.Mesh(eyeGeo, this.shadowMat);
+    this.rightEye.position.set(0.095, 1.51, 0.285);
+
+    this.smile = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-0.09, 1.41, 0.305),
+        new THREE.Vector3(-0.025, 1.385, 0.322),
+        new THREE.Vector3(0.055, 1.395, 0.318),
+        new THREE.Vector3(0.11, 1.43, 0.302),
+      ]),
+      this.goldLineMat,
+    );
+
+    this.greenEyeGlint = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: this._radialTex('rgba(77,255,170,0.9)', 'rgba(77,255,170,0)'),
       color: 0x4dffaa,
       transparent: true,
       opacity: 0,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-    });
-    this.eyeGlow = new THREE.Sprite(this.eyeGlowMat);
-    this.eyeGlow.position.set(0.48, 0.35, 1.04);
-    this.eyeGlow.scale.set(0.48, 0.48, 1);
-    this.profile.add(this.eyeGlow);
+    }));
+    this.greenEyeGlint.position.set(0.13, 1.52, 0.32);
+    this.greenEyeGlint.scale.set(0.22, 0.22, 1);
 
-    this.veils = new THREE.Group();
-    this.veilMaterials = [];
+    this.trails = new THREE.Group();
+    this.trailMaterials = [];
     for (let i = 0; i < 4; i += 1) {
-      const veilGeo = new THREE.PlaneGeometry(2.2 + i * 0.25, 3.8 + i * 0.4, 20, 28);
-      const pos = veilGeo.attributes.position;
+      const trailGeo = new THREE.PlaneGeometry(1.0 + i * 0.18, 2.7 + i * 0.18, 12, 18);
+      const pos = trailGeo.attributes.position;
       for (let j = 0; j < pos.count; j += 1) {
-        const x = pos.getX(j);
         const y = pos.getY(j);
-        pos.setZ(j, Math.sin(y * 1.6 + i * 0.8) * 0.12 + Math.cos(x * 1.2) * 0.08);
+        pos.setZ(j, Math.sin(y * 2.0 + i) * 0.08);
       }
       pos.needsUpdate = true;
-      veilGeo.computeVertexNormals();
-
-      const veilMat = new THREE.MeshBasicMaterial({
-        color: i % 2 === 0 ? 0xf4e9d8 : 0xd4af37,
+      const mat = new THREE.MeshBasicMaterial({
+        color: i % 2 === 0 ? 0xf4e9d8 : 0xf0cf65,
         transparent: true,
         opacity: 0,
         side: THREE.DoubleSide,
         depthWrite: false,
-        blending: THREE.NormalBlending,
       });
-      this.veilMaterials.push(veilMat);
-
-      const veil = new THREE.Mesh(veilGeo, veilMat);
-      veil.position.set(
-        -0.45 + i * 0.26,
-        0.18 - i * 0.05,
-        -0.65 - i * 0.55,
-      );
-      veil.rotation.y = -0.45 + i * 0.16;
-      veil.rotation.z = -0.1 + i * 0.06;
-      veil.userData.seed = Math.random() * Math.PI * 2;
-      veil.userData.basePosition = veil.position.clone();
-      veil.userData.baseRotation = veil.rotation.clone();
-      this.veils.add(veil);
-    }
-
-    this.memoryRings = new THREE.Group();
-    this.ringMaterials = [];
-    [1.3, 1.95, 2.7].forEach((radius, index) => {
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: index === 0 ? 0xf0cf65 : 0xf4e9d8,
-        transparent: true,
-        opacity: 0,
-        side: THREE.DoubleSide,
-      });
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(radius, 0.02 + index * 0.012, 16, 120, Math.PI * 1.18),
-        ringMat,
-      );
-      ring.rotation.set(0.14 - index * 0.08, 0.72 + index * 0.08, 0.28 - index * 0.12);
-      ring.position.set(0.7 - index * 0.18, 0.12 + index * 0.12, -0.9 - index * 0.38);
-      ring.userData.seed = Math.random() * Math.PI * 2;
-      this.ringMaterials.push(ringMat);
-      this.memoryRings.add(ring);
-    });
-
-    this.bokeh = new THREE.Group();
-    for (let i = 0; i < 10; i += 1) {
-      const bokehMat = new THREE.SpriteMaterial({
-        map: this._radialTex('rgba(255,248,230,0.9)', 'rgba(255,248,230,0)'),
-        color: i % 3 === 0 ? 0xf0cf65 : 0xf4e9d8,
-        transparent: true,
-        opacity: 0,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      });
-      const sprite = new THREE.Sprite(bokehMat);
-      sprite.position.set(
-        (Math.random() - 0.5) * 9,
-        0.4 + Math.random() * 4.6,
-        -3.5 - Math.random() * 7.5,
-      );
-      const scale = 0.45 + Math.random() * 1.1;
-      sprite.scale.set(scale, scale, 1);
-      sprite.userData.seed = Math.random() * Math.PI * 2;
-      sprite.userData.basePosition = sprite.position.clone();
-      this.bokeh.add(sprite);
+      const trail = new THREE.Mesh(trailGeo, mat);
+      trail.position.set(-0.16 + i * 0.12, 0.42 - i * 0.05, -0.5 - i * 0.32);
+      trail.rotation.y = -0.16 + i * 0.1;
+      trail.userData.seed = Math.random() * Math.PI * 2;
+      trail.userData.basePosition = trail.position.clone();
+      this.trailMaterials.push(mat);
+      this.trails.add(trail);
     }
 
     this.dust = this._makeDust();
 
-    this.memory.add(this.profile, this.veils, this.memoryRings);
+    this.figure.add(
+      this.trails,
+      this.dress,
+      neck,
+      this.leftArm,
+      this.wavePivot,
+      this.head,
+      this.hair,
+      this.leftEye,
+      this.rightEye,
+      this.smile,
+      this.greenEyeGlint,
+    );
+
     this.group.add(
       this.ambient,
       this.keyLight,
       this.rimLight,
-      this.coolFill,
+      this.greenFill,
       this.backGlow,
-      this.coldHalo,
-      this.bokeh,
-      this.memory,
+      this.figure,
       this.dust,
     );
     this.group.visible = false;
@@ -213,20 +208,19 @@ export class ArtDecoScene {
   }
 
   _makeDust() {
-    const count = window.innerWidth < 720 ? 110 : 240;
+    const count = window.innerWidth < 720 ? 80 : 150;
     const positions = new Float32Array(count * 3);
     const seeds = new Float32Array(count);
     for (let i = 0; i < count; i += 1) {
-      positions[i * 3 + 0] = (Math.random() - 0.5) * 8;
-      positions[i * 3 + 1] = Math.random() * 4.8 - 0.2;
-      positions[i * 3 + 2] = -Math.random() * 8 - 2;
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 7.5;
+      positions[i * 3 + 1] = Math.random() * 4.2 - 0.1;
+      positions[i * 3 + 2] = -Math.random() * 7.5 - 2;
       seeds[i] = Math.random();
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
 
-    const tex = this._radialTex('rgba(255,250,240,1)', 'rgba(255,250,240,0)');
     const mat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -235,7 +229,7 @@ export class ArtDecoScene {
         uTime: { value: 0 },
         uOpacity: { value: 0 },
         uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
-        uTex: { value: tex },
+        uTex: { value: this._radialTex('rgba(255,250,240,1)', 'rgba(255,250,240,0)') },
       },
       vertexShader: `
         attribute float aSeed;
@@ -244,13 +238,12 @@ export class ArtDecoScene {
         varying float vAlpha;
         void main() {
           vec3 p = position;
-          p.x += sin(uTime * 0.28 + aSeed * 8.0) * 0.24;
-          p.y += cos(uTime * 0.34 + aSeed * 9.0) * 0.14;
-          p.z += sin(uTime * 0.18 + aSeed * 10.0) * 0.3;
+          p.x += sin(uTime * 0.24 + aSeed * 8.0) * 0.18;
+          p.y += cos(uTime * 0.3 + aSeed * 9.0) * 0.1;
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
           gl_Position = projectionMatrix * mv;
-          gl_PointSize = (3.5 + aSeed * 5.5) * 24.0 * uPixelRatio / -mv.z;
-          vAlpha = 0.35 + aSeed * 0.65;
+          gl_PointSize = (2.6 + aSeed * 4.2) * 22.0 * uPixelRatio / -mv.z;
+          vAlpha = 0.3 + aSeed * 0.55;
         }
       `,
       fragmentShader: `
@@ -279,57 +272,42 @@ export class ArtDecoScene {
   update(t) {
     if (!this.group.visible) return;
 
-    const warmShift = 0.56 + this.progress * 0.44;
-    const coolShift = 1.0 - smoothstepLocal(0.18, 0.94, this.progress) * 0.72;
+    const smileWarmth = 0.7 + Math.sin(t * 0.8) * 0.08 + this.progress * 0.18;
+    const wave = Math.sin(t * 1.4 + this.progress * 2.0) * 0.22;
 
-    this.ambient.intensity = this.intensity * 0.45;
-    this.keyLight.intensity = this.intensity * (1.3 + this.progress * 0.38);
-    this.rimLight.intensity = this.intensity * 0.72;
-    this.coolFill.intensity = this.intensity * 0.22 * coolShift;
+    this.ambient.intensity = this.intensity * 0.46;
+    this.keyLight.intensity = this.intensity * (1.25 + this.progress * 0.3);
+    this.rimLight.intensity = this.intensity * 0.65;
+    this.greenFill.intensity = this.intensity * (0.14 + this.progress * 0.18);
+    this.backGlowMat.opacity = this.intensity * (0.12 + this.progress * 0.22);
 
-    this.profileMat.opacity = this.intensity * 0.8;
-    this.profileMat.emissiveIntensity = this.intensity * 0.12 * warmShift;
-    this.backGlowMat.opacity = this.intensity * (0.18 + this.progress * 0.22);
-    this.coldHaloMat.opacity = this.intensity * (0.1 + (1 - this.progress) * 0.18);
-    this.cheekGlowMat.opacity = this.intensity * (0.22 + this.progress * 0.18);
-    this.eyeGlowMat.opacity = this.intensity * (0.16 + Math.sin(t * 1.4) * 0.05 + (1 - this.progress) * 0.08);
+    this.skinMat.opacity = this.intensity * 0.92;
+    this.hairMat.opacity = this.intensity * 0.9;
+    this.dressMat.opacity = this.intensity * 0.86;
+    this.shadowMat.opacity = this.intensity * 0.62;
+    this.goldLineMat.opacity = this.intensity * smileWarmth;
+    this.greenLineMat.opacity = this.intensity * (0.18 + this.progress * 0.22);
+    this.greenEyeGlint.material.opacity = this.intensity * (0.14 + Math.sin(t * 1.8) * 0.04 + this.progress * 0.08);
 
-    this.memory.rotation.y = Math.sin(t * 0.18) * 0.08 - this.progress * 0.06;
-    this.memory.rotation.z = Math.sin(t * 0.14) * 0.025;
-    this.memory.position.x = Math.sin(t * 0.16) * 0.18;
-    this.memory.position.z = -6.2 + Math.sin(t * 0.2) * 0.12;
-    this.profile.rotation.y = -0.92 + Math.sin(t * 0.24) * 0.06 + this.progress * 0.08;
-    this.profile.rotation.z = 0.1 + Math.sin(t * 0.42) * 0.02;
+    this.figure.position.x = 0.45 + Math.sin(t * 0.18) * 0.08;
+    this.figure.position.y = 1.05 + Math.sin(t * 0.32) * 0.05;
+    this.figure.rotation.y = -0.28 + Math.sin(t * 0.22) * 0.06;
+    this.figure.rotation.z = Math.sin(t * 0.16) * 0.02;
+    this.head.rotation.y = Math.sin(t * 0.42) * 0.08;
+    this.wavePivot.rotation.z = -0.12 + wave;
+    this.wavePivot.rotation.x = Math.sin(t * 0.75) * 0.05;
 
-    this.veils.children.forEach((veil, index) => {
-      const basePos = veil.userData.basePosition;
-      const baseRot = veil.userData.baseRotation;
-      const sway = Math.sin(t * (0.55 + index * 0.08) + veil.userData.seed);
-      veil.position.x = basePos.x + sway * 0.08;
-      veil.position.y = basePos.y + Math.cos(t * 0.48 + veil.userData.seed) * 0.06;
-      veil.position.z = basePos.z + Math.sin(t * 0.38 + veil.userData.seed) * 0.12;
-      veil.rotation.y = baseRot.y + sway * 0.1;
-      veil.rotation.z = baseRot.z + Math.cos(t * 0.44 + veil.userData.seed) * 0.035;
-      this.veilMaterials[index].opacity = this.intensity * (0.05 + (3 - index) * 0.025 + this.progress * 0.05);
-    });
-
-    this.memoryRings.children.forEach((ring, index) => {
-      ring.rotation.z += 0.0008 + index * 0.00015;
-      ring.rotation.y += 0.0005 + index * 0.0001;
-      ring.position.x = 0.2 - index * 0.08 + Math.sin(t * 0.22 + ring.userData.seed) * 0.06;
-      this.ringMaterials[index].opacity = this.intensity * (0.05 + index * 0.022);
-    });
-
-    this.bokeh.children.forEach((sprite, index) => {
-      const base = sprite.userData.basePosition;
-      sprite.position.x = base.x + Math.sin(t * (0.24 + index * 0.01) + sprite.userData.seed) * 0.22;
-      sprite.position.y = base.y + Math.cos(t * 0.26 + sprite.userData.seed) * 0.18;
-      sprite.position.z = base.z + Math.sin(t * 0.16 + sprite.userData.seed) * 0.22;
-      sprite.material.opacity = this.intensity * (0.08 + (index % 4) * 0.03 + this.progress * 0.03);
+    this.trails.children.forEach((trail, index) => {
+      const base = trail.userData.basePosition;
+      const sway = Math.sin(t * (0.52 + index * 0.08) + trail.userData.seed);
+      trail.position.x = base.x + sway * 0.07;
+      trail.position.y = base.y + Math.cos(t * 0.4 + trail.userData.seed) * 0.04;
+      trail.rotation.y = -0.16 + index * 0.1 + sway * 0.05;
+      this.trailMaterials[index].opacity = this.intensity * (0.045 + index * 0.014 + this.progress * 0.024);
     });
 
     this.dustUniforms.uTime.value = t;
-    this.dustUniforms.uOpacity.value = this.intensity * (0.36 + this.progress * 0.12);
+    this.dustUniforms.uOpacity.value = this.intensity * (0.28 + this.progress * 0.08);
   }
 
   dispose() {
@@ -349,9 +327,4 @@ export class ArtDecoScene {
     });
     this.scene.remove(this.group);
   }
-}
-
-function smoothstepLocal(min, max, value) {
-  const x = THREE.MathUtils.clamp((value - min) / (max - min || 1), 0, 1);
-  return x * x * (3 - 2 * x);
 }
