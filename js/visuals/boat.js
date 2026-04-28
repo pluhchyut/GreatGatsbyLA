@@ -1,6 +1,6 @@
 // "So we beat on..." The last chapter widens the frame and lets the motion
-// feel lonelier: denser fog, heavier water, a wake behind the boat, and the
-// green light reduced to a small persistent wound on the horizon.
+// feel lonelier, but the final light now has a real payoff on the horizon:
+// a stronger orb, a soft atmospheric bloom, and a broken reflection lane.
 
 import * as THREE from 'three';
 
@@ -139,14 +139,15 @@ export class BoatScene {
     this.shoreline = new THREE.Mesh(shorelineGeo, this.shorelineMat);
     this.shoreline.position.set(0, 0.95, -30);
 
-    const orbGeo = new THREE.SphereGeometry(0.18, 24, 24);
+    const orbGeo = new THREE.SphereGeometry(0.24, 28, 28);
     this.farOrbMat = new THREE.MeshBasicMaterial({
-      color: 0x4dffaa,
+      color: 0xb8ffde,
       transparent: true,
       opacity: 0,
+      fog: false,
     });
     this.farOrb = new THREE.Mesh(orbGeo, this.farOrbMat);
-    this.farOrb.position.set(-3, 1.2, -28);
+    this.farOrb.position.set(-2.2, 1.34, -24.5);
     const haloTex = this._radialTex('rgba(77,255,170,0.9)', 'rgba(77,255,170,0)');
     this.farHaloMat = new THREE.SpriteMaterial({
       map: haloTex,
@@ -157,8 +158,45 @@ export class BoatScene {
       depthWrite: false,
     });
     this.farHalo = new THREE.Sprite(this.farHaloMat);
-    this.farHalo.scale.setScalar(4);
+    this.farHalo.scale.setScalar(6.2);
     this.farHalo.position.copy(this.farOrb.position);
+
+    this.pinLightMat = new THREE.SpriteMaterial({
+      map: this._radialTex('rgba(255,255,255,0.98)', 'rgba(255,255,255,0)'),
+      color: 0x9dffda,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    this.pinLight = new THREE.Sprite(this.pinLightMat);
+    this.pinLight.position.copy(this.farOrb.position);
+    this.pinLight.scale.set(1.1, 1.1, 1);
+
+    this.horizonGlowMat = new THREE.SpriteMaterial({
+      map: this._radialTex('rgba(77,255,170,0.65)', 'rgba(77,255,170,0)'),
+      color: 0x5effb8,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    this.horizonGlow = new THREE.Sprite(this.horizonGlowMat);
+    this.horizonGlow.position.set(-2.15, 1.24, -24.8);
+    this.horizonGlow.scale.set(13.5, 8.2, 1);
+
+    this.reflectionMat = new THREE.MeshBasicMaterial({
+      map: this._reflectionTex(),
+      color: 0x7affcd,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
+    this.reflection = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 12.5), this.reflectionMat);
+    this.reflection.rotation.x = -Math.PI / 2;
+    this.reflection.position.set(-2.1, 0.045, -17.8);
 
     this.moonLight = new THREE.DirectionalLight(0xb8c8e0, 0);
     this.moonLight.position.set(-3, 4, -2);
@@ -172,6 +210,9 @@ export class BoatScene {
       this.shoreline,
       this.wake,
       this.boat,
+      this.reflection,
+      this.horizonGlow,
+      this.pinLight,
       this.farHalo,
       this.farOrb,
       this.moonLight,
@@ -192,6 +233,23 @@ export class BoatScene {
     grad.addColorStop(1, c1);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, size, size);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  _reflectionTex() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 96;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, 'rgba(255,255,255,0.95)');
+    grad.addColorStop(0.18, 'rgba(180,255,223,0.55)');
+    grad.addColorStop(0.52, 'rgba(107,255,189,0.16)');
+    grad.addColorStop(1, 'rgba(107,255,189,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     return texture;
@@ -270,8 +328,11 @@ export class BoatScene {
     this.sailMat.opacity = this.intensity * 0.96;
     this.wakeMat.opacity = this.intensity * (0.16 + this.progress * 0.14);
     this.shorelineMat.opacity = this.intensity * 0.75;
-    this.farOrbMat.opacity = this.intensity;
-    this.farHaloMat.opacity = this.intensity * (0.48 + this.progress * 0.18);
+    this.farOrbMat.opacity = this.intensity * Math.min(1, 0.92 + this.progress * 0.65);
+    this.pinLightMat.opacity = this.intensity * (0.32 + this.progress * 0.6);
+    this.farHaloMat.opacity = this.intensity * Math.min(1, 0.56 + this.progress * 0.48);
+    this.horizonGlowMat.opacity = this.intensity * (0.18 + this.progress * 0.58);
+    this.reflectionMat.opacity = this.intensity * (0.14 + this.progress * 0.46);
     this.moonLight.intensity = this.intensity * 0.74;
     this.ambient.intensity = this.intensity * 0.42;
 
@@ -284,9 +345,16 @@ export class BoatScene {
     this.wake.position.y = 0.08 + Math.sin(t * 0.9 + 0.6) * 0.03;
     this.wake.scale.set(4.6 + this.progress * 1.1, 1.8 + this.progress * 0.6, 1);
 
-    const pulse = 0.92 + Math.sin(t * 1.4) * 0.08;
-    this.farOrb.scale.setScalar(pulse);
-    this.farHalo.scale.setScalar(4 * pulse);
+    const pulse = 0.96 + Math.sin(t * 1.35) * 0.08 + this.progress * 0.15;
+    this.farOrb.scale.setScalar(pulse * 0.72);
+    this.pinLight.scale.setScalar(1.25 + this.progress * 1.45 + Math.sin(t * 1.8) * 0.08);
+    this.farHalo.scale.setScalar((6.2 + this.progress * 2.8) * pulse);
+    this.horizonGlow.scale.set(13.5 + this.progress * 7.0, 8.2 + this.progress * 3.2, 1);
+    this.horizonGlow.position.y = 1.24 + Math.sin(t * 0.7) * 0.03;
+    this.reflection.scale.set(1.0 + this.progress * 0.75, 1.0 + this.progress * 0.38, 1);
+    this.reflection.position.x = this.farOrb.position.x + Math.sin(t * 0.22) * 0.04;
+    this.reflection.position.z = -17.8 + this.progress * 1.6;
+    this.pinLight.position.copy(this.farOrb.position);
 
     this.fog.near = 8;
     this.fog.far = 38 - this.progress * 4.0;

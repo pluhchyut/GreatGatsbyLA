@@ -1,10 +1,7 @@
 // App entry. Builds the scrolling DOM from poem.js, initializes the Three.js
-// stage, and wires native scroll position to scene blending. Locomotive
-// Scroll's smooth mode was unreliable on this layout (its `scroll` event
-// stayed silent on first paint, leaving every chapter frozen on the green
-// light). We use native scroll + RAF + IntersectionObserver instead — that's
-// what actually drives the chapter chrome, the scene crossfades, and the
-// `is-inview` text reveals.
+// stage, and uses Locomotive Scroll as the primary motion layer. Native scroll
+// remains as a fallback so the chapter blending still works if smooth mode is
+// unavailable.
 
 import { Stage } from './scene.js';
 import { sections } from './poem.js';
@@ -112,6 +109,7 @@ function buildDom() {
 function boot() {
   buildDom();
 
+  const scrollRoot = document.getElementById('scroll-container');
   const stage = new Stage(document.getElementById('three-canvas'));
   const sectionEls = Array.from(document.querySelectorAll('[data-scene]'));
   const progressFill = document.getElementById('progress-fill');
@@ -126,28 +124,18 @@ function boot() {
   const sectionsByScene = Object.fromEntries(
     VISUAL_KEYS.map((key) => [key, sectionEls.filter((el) => el.dataset.scene === key)]),
   );
-
-  // ---------- Reveal-on-enter via IntersectionObserver ----------
-  // Replaces Locomotive's `is-inview`. Triggers when any portion of the
-  // element crosses 25% of the viewport.
   const reveals = Array.from(document.querySelectorAll('.reveal'));
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) e.target.classList.add('is-inview');
-        else e.target.classList.remove('is-inview');
-      });
-    }, { rootMargin: '-15% 0px -15% 0px', threshold: 0 });
-    reveals.forEach((el) => io.observe(el));
-  } else {
-    reveals.forEach((el) => el.classList.add('is-inview'));
-  }
 
   let lastChapterKey = '';
   let lastBeatId = '';
   let lastY = 0;
   let lastTime = performance.now();
   let velocityEMA = 0;
+  let locomotive = null;
+  let smoothY = 0;
+  let smoothSpeed = 0;
+  let smoothDirection = 1;
+  let smoothLimit = 0;
 
   const bootMessages = [
     'bootrom // west egg archive // preparing scene memory',
@@ -160,6 +148,34 @@ function boot() {
     bootIndex = (bootIndex + 1) % bootMessages.length;
     if (loaderStatus) loaderStatus.textContent = bootMessages[bootIndex];
   }, 950);
+
+  function initLocomotive() {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || typeof window.LocomotiveScroll !== 'function' || !scrollRoot) return;
+
+    locomotive = new window.LocomotiveScroll({
+      el: scrollRoot,
+      smooth: true,
+      lerp: window.innerWidth < 720 ? 0.12 : 0.08,
+      multiplier: window.innerWidth < 720 ? 0.9 : 1.0,
+      getDirection: true,
+      getSpeed: true,
+      reloadOnContextChange: true,
+      smartphone: { smooth: false },
+      tablet: { smooth: true, breakpoint: 1024 },
+    });
+
+    locomotive.on('scroll', (args) => {
+      smoothY = args.scroll.y;
+      smoothSpeed = (args.speed ?? 0) * 2.4;
+      smoothDirection = args.direction === 'up' ? -1 : 1;
+      smoothLimit = args.limit?.y ?? smoothLimit;
+    });
+
+    window.setTimeout(() => locomotive?.update(), 120);
+    window.addEventListener('resize', () => locomotive?.update());
+    window.addEventListener('beforeunload', () => locomotive?.destroy(), { once: true });
+  }
 
   function measureAll() {
     const vh = window.innerHeight;
@@ -234,15 +250,22 @@ function boot() {
       lastBeatId = activeSection.dataset.entryId;
     }
 
-    // Native scroll progress + velocity
-    const docH = Math.max(1, document.documentElement.scrollHeight - vh);
-    const y = window.scrollY || document.documentElement.scrollTop || 0;
-    const progress = clamp(y / docH, 0, 1);
+    reveals.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      const inView = rect.bottom > vh * 0.22 && rect.top < vh * 0.82;
+      el.classList.toggle('is-inview', inView);
+    });
+
+    const y = locomotive ? smoothY : (window.scrollY || document.documentElement.scrollTop || 0);
+    const limit = locomotive
+      ? Math.max(1, smoothLimit || scrollRoot.scrollHeight - vh)
+      : Math.max(1, document.documentElement.scrollHeight - vh);
+    const progress = clamp(y / limit, 0, 1);
     const now = performance.now();
     const dt = Math.max(16, now - lastTime);
-    const inst = ((y - lastY) / dt) * 16.0;
-    velocityEMA = velocityEMA * 0.85 + inst * 0.15;
-    const direction = inst >= 0 ? 1 : -1;
+    const inst = locomotive ? smoothSpeed : ((y - lastY) / dt) * 16.0;
+    velocityEMA = velocityEMA * 0.82 + inst * 0.18;
+    const direction = locomotive ? smoothDirection : (inst >= 0 ? 1 : -1);
 
     stage.setScrollMetrics({ progress, velocity: velocityEMA, direction });
     if (progressFill) progressFill.style.transform = `scaleY(${progress})`;
@@ -257,12 +280,15 @@ function boot() {
   }
   requestAnimationFrame(rafLoop);
 
+  initLocomotive();
+
   // Hide loader when load fires (or on a fallback timer in case `load` was
   // already past by the time this script attached).
   const hideLoader = () => {
     window.clearInterval(bootTicker);
     const loader = document.getElementById('loader');
     if (loader) loader.classList.add('hidden');
+    locomotive?.update();
   };
   if (document.readyState === 'complete') {
     setTimeout(hideLoader, 500);

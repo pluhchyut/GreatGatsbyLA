@@ -46,8 +46,40 @@ function smoothstep(min, max, value) {
   return x * x * (3 - 2 * x);
 }
 
+function hashString(value = '') {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function createBeatVariant(beat) {
+  const hash = hashString(`${beat.entryId}|${beat.scene}|${beat.shot}|${beat.transition}`);
+  const byte = (shift) => ((hash >>> shift) & 255) / 255;
+  const signed = (shift, scale) => (byte(shift) - 0.5) * scale;
+  return {
+    sideBias: signed(0, 0.64),
+    verticalBias: signed(8, 0.34),
+    depthBias: signed(16, 0.46),
+    rollBias: signed(24, 0.04),
+    driftBias: 0.82 + byte(4) * 0.58,
+    overlayX: 22 + byte(12) * 56,
+    overlayY: 18 + byte(20) * 48,
+    overlayRadius: 52 + byte(2) * 18,
+    overlayAngle: 150 + byte(10) * 80,
+    transitionPunch: 0.84 + byte(18) * 0.5,
+  };
+}
+
 function parseShotText(text = '') {
   const lower = text.toLowerCase();
+  if (lower.includes('light lingering last')) return 'telephoto';
+  if (lower.includes('green light steady in darkness')) return 'telephoto';
+  if (lower.includes('green light glowing alone')) return 'telephoto';
+  if (lower.includes('zoom nearly')) return 'push';
+  if (lower.includes('tight close-up')) return 'close';
   if (lower.includes('extreme close-up')) return 'extreme-close';
   if (lower.includes('close-up')) return 'close';
   if (lower.includes('wide shot')) return 'wide';
@@ -61,12 +93,27 @@ function parseShotText(text = '') {
   if (lower.includes('static shot')) return 'static';
   if (lower.includes('time-lapse')) return 'timelapse';
   if (lower.includes('montage')) return 'montage';
+  if (lower.includes('full fade to black')) return 'still';
   if (lower.includes('compressed')) return 'telephoto';
   return 'medium';
 }
 
 function parseTransitionText(text = '') {
   const lower = text.toLowerCase();
+  if (lower.includes('bleeds upward')) return 'bleed-up';
+  if (lower.includes('tilts down into')) return 'tilt-drop';
+  if (lower.includes('warm golden light') || lower.includes('pale glow of mansion lights')) return 'glow-dissolve';
+  if (lower.includes('layered dissolve') || lower.includes('overlap')) return 'layered-dissolve';
+  if (lower.includes('droplet falls') || lower.includes('drop hits the water')) return 'impact-drop';
+  if (lower.includes('heartbeat')) return 'heartbeat';
+  if (lower.includes('motion streaks') || lower.includes('streaks of color')) return 'streak-blur';
+  if (lower.includes('warps into') || lower.includes('distorts')) return 'audio-warp';
+  if (lower.includes('slower, heavier') || lower.includes('spin slows')) return 'decelerate';
+  if (lower.includes('flicker') || lower.includes('pulses once')) return 'flicker';
+  if (lower.includes('horizon line bends')) return 'horizon-bend';
+  if (lower.includes('glitch')) return 'frame-glitch';
+  if (lower.includes('fade to black') || lower.includes('empties without ever quite closing')) return 'fade-out';
+  if (lower.includes('dissolves into air') || lower.includes('empty air') || lower.includes('dissolves into wind')) return 'air-drift';
   if (lower.includes('dissolve')) return 'dissolve';
   if (lower.includes('fade')) return 'fade';
   if (lower.includes('blur')) return 'blur';
@@ -100,19 +147,33 @@ const SHOT_PROFILES = {
 };
 
 const TRANSITION_STYLES = {
-  dissolve: { opacity: 0.18, blur: 2.8, tint: 'rgba(244,233,216,0.16)' },
-  fade: { opacity: 0.28, blur: 1.5, tint: 'rgba(10,25,41,0.32)' },
-  blur: { opacity: 0.16, blur: 4.2, tint: 'rgba(244,233,216,0.08)' },
-  warp: { opacity: 0.14, blur: 2.6, tint: 'rgba(77,255,170,0.14)' },
-  glitch: { opacity: 0.1, blur: 1.4, tint: 'rgba(212,175,55,0.12)' },
-  silence: { opacity: 0.22, blur: 0.6, tint: 'rgba(3,7,13,0.28)' },
-  pulse: { opacity: 0.2, blur: 2.0, tint: 'rgba(77,255,170,0.16)' },
-  ripple: { opacity: 0.12, blur: 2.2, tint: 'rgba(77,255,170,0.1)' },
-  stretch: { opacity: 0.16, blur: 2.4, tint: 'rgba(244,233,216,0.1)' },
-  drop: { opacity: 0.14, blur: 2.0, tint: 'rgba(212,175,55,0.1)' },
-  tilt: { opacity: 0.08, blur: 1.4, tint: 'rgba(244,233,216,0.08)' },
-  echo: { opacity: 0.12, blur: 2.4, tint: 'rgba(77,255,170,0.08)' },
-  drift: { opacity: 0.08, blur: 1.2, tint: 'rgba(244,233,216,0.06)' },
+  'bleed-up': { opacity: 0.2, blur: 2.8, tint: 'rgba(77,255,170,0.12)', radius: 64, angle: 180 },
+  'tilt-drop': { opacity: 0.16, blur: 1.8, tint: 'rgba(244,233,216,0.1)', radius: 56, angle: 172 },
+  'glow-dissolve': { opacity: 0.22, blur: 3.1, tint: 'rgba(240,207,101,0.18)', radius: 60, angle: 146 },
+  'layered-dissolve': { opacity: 0.18, blur: 3.4, tint: 'rgba(244,233,216,0.14)', radius: 58, angle: 130 },
+  'impact-drop': { opacity: 0.16, blur: 2.1, tint: 'rgba(212,175,55,0.12)', radius: 54, angle: 170 },
+  heartbeat: { opacity: 0.22, blur: 2.4, tint: 'rgba(77,255,170,0.18)', radius: 48, angle: 180 },
+  'streak-blur': { opacity: 0.16, blur: 4.5, tint: 'rgba(244,233,216,0.08)', radius: 62, angle: 112 },
+  'audio-warp': { opacity: 0.14, blur: 3.3, tint: 'rgba(77,255,170,0.11)', radius: 54, angle: 104 },
+  decelerate: { opacity: 0.16, blur: 1.3, tint: 'rgba(244,233,216,0.12)', radius: 50, angle: 180 },
+  flicker: { opacity: 0.14, blur: 2.0, tint: 'rgba(77,255,170,0.14)', radius: 48, angle: 180 },
+  'horizon-bend': { opacity: 0.18, blur: 2.0, tint: 'rgba(77,255,170,0.08)', radius: 68, angle: 180 },
+  'frame-glitch': { opacity: 0.12, blur: 1.0, tint: 'rgba(212,175,55,0.1)', radius: 44, angle: 90 },
+  'fade-out': { opacity: 0.3, blur: 1.2, tint: 'rgba(3,7,13,0.36)', radius: 76, angle: 180 },
+  'air-drift': { opacity: 0.12, blur: 2.0, tint: 'rgba(244,233,216,0.08)', radius: 60, angle: 138 },
+  dissolve: { opacity: 0.18, blur: 2.8, tint: 'rgba(244,233,216,0.16)', radius: 56, angle: 150 },
+  fade: { opacity: 0.28, blur: 1.5, tint: 'rgba(10,25,41,0.32)', radius: 72, angle: 180 },
+  blur: { opacity: 0.16, blur: 4.2, tint: 'rgba(244,233,216,0.08)', radius: 56, angle: 120 },
+  warp: { opacity: 0.14, blur: 2.6, tint: 'rgba(77,255,170,0.14)', radius: 54, angle: 106 },
+  glitch: { opacity: 0.1, blur: 1.4, tint: 'rgba(212,175,55,0.12)', radius: 46, angle: 90 },
+  silence: { opacity: 0.22, blur: 0.6, tint: 'rgba(3,7,13,0.28)', radius: 72, angle: 180 },
+  pulse: { opacity: 0.2, blur: 2.0, tint: 'rgba(77,255,170,0.16)', radius: 48, angle: 180 },
+  ripple: { opacity: 0.12, blur: 2.2, tint: 'rgba(77,255,170,0.1)', radius: 60, angle: 180 },
+  stretch: { opacity: 0.16, blur: 2.4, tint: 'rgba(244,233,216,0.1)', radius: 64, angle: 180 },
+  drop: { opacity: 0.14, blur: 2.0, tint: 'rgba(212,175,55,0.1)', radius: 54, angle: 170 },
+  tilt: { opacity: 0.08, blur: 1.4, tint: 'rgba(244,233,216,0.08)', radius: 50, angle: 156 },
+  echo: { opacity: 0.12, blur: 2.4, tint: 'rgba(77,255,170,0.08)', radius: 58, angle: 120 },
+  drift: { opacity: 0.08, blur: 1.2, tint: 'rgba(244,233,216,0.06)', radius: 52, angle: 148 },
 };
 
 export class Stage {
@@ -223,7 +284,8 @@ export class Stage {
     const transitionType = parseTransitionText(this.activeBeat.transition);
     const shot = SHOT_PROFILES[shotType] || SHOT_PROFILES.medium;
     const transition = TRANSITION_STYLES[transitionType] || TRANSITION_STYLES.drift;
-    return { shotType, transitionType, shot, transition };
+    const variant = createBeatVariant(this.activeBeat);
+    return { shotType, transitionType, shot, transition, variant };
   }
 
   _getSceneFocusOffset(sceneKey, shotType) {
@@ -258,17 +320,18 @@ export class Stage {
       boat: {
         long: { pos: new THREE.Vector3(0.3, 0.25, 1.3), look: new THREE.Vector3(-0.2, 0.0, -1.5) },
         wide: { pos: new THREE.Vector3(0.0, 0.3, 1.8), look: new THREE.Vector3(-0.4, 0.0, -1.8) },
-        telephoto: { pos: new THREE.Vector3(0.0, 0.0, 2.4), look: new THREE.Vector3(-0.3, 0.1, -2.0) },
-        still: { pos: new THREE.Vector3(0.0, 0.0, 0.7), look: new THREE.Vector3(-0.2, 0.0, -1.0) },
+        telephoto: { pos: new THREE.Vector3(-0.7, 0.14, 3.6), look: new THREE.Vector3(-3.0, 0.58, -16.8) },
+        still: { pos: new THREE.Vector3(-0.95, 0.16, 4.0), look: new THREE.Vector3(-3.25, 0.64, -17.0) },
       },
     };
     return map[sceneKey]?.[shotType] || { pos: new THREE.Vector3(), look: new THREE.Vector3() };
   }
 
-  _applyBeatOverlay(progress, shotType, transitionStyle) {
+  _applyBeatOverlay(progress, shotType, transitionStyle, variant) {
     if (!this.veilEl || !this.maskTopEl || !this.maskBottomEl) return;
 
     const veilPhase = smoothstep(0.45, 1.0, progress);
+    const punch = variant.transitionPunch;
     const maskBase = shotType === 'telephoto' || shotType === 'wide'
       ? 0
       : shotType === 'extreme-close'
@@ -276,19 +339,23 @@ export class Stage {
         : shotType === 'close' || shotType === 'push'
           ? 7
           : 4;
-    const maskHeight = maskBase + veilPhase * 8;
+    const maskHeight = maskBase + veilPhase * (7 + punch * 3.5);
+    const centerY = variant.overlayY - veilPhase * 10;
+    const centerX = variant.overlayX + Math.sin(progress * Math.PI) * variant.sideBias * 18;
+    const radius = transitionStyle.radius ?? 58;
+    const angle = transitionStyle.angle ?? 160;
 
     this.maskTopEl.style.height = `${maskHeight}px`;
     this.maskBottomEl.style.height = `${maskHeight}px`;
-    this.veilEl.style.opacity = String(transitionStyle.opacity * veilPhase);
-    this.veilEl.style.backdropFilter = `blur(${transitionStyle.blur * veilPhase}px) saturate(${1 + veilPhase * 0.18})`;
+    this.veilEl.style.opacity = String(transitionStyle.opacity * veilPhase * punch);
+    this.veilEl.style.backdropFilter = `blur(${transitionStyle.blur * veilPhase * punch}px) saturate(${1 + veilPhase * 0.18})`;
     this.veilEl.style.background = `
-      radial-gradient(circle at center, ${transitionStyle.tint}, transparent 62%),
-      linear-gradient(180deg, rgba(10, 25, 41, ${veilPhase * 0.14}), rgba(10, 25, 41, ${veilPhase * 0.22}))
+      radial-gradient(circle at ${centerX}% ${centerY}%, ${transitionStyle.tint}, transparent ${radius}%),
+      linear-gradient(${angle}deg, rgba(10, 25, 41, ${veilPhase * 0.12}), rgba(10, 25, 41, ${veilPhase * 0.24}))
     `;
   }
 
-  _applyVisualRig(key, visual, shotType, progress, t) {
+  _applyVisualRig(key, visual, shotType, progress, t, variant) {
     if (!visual.group) return;
     const group = visual.group;
     const base = group.userData.baseTransform || {
@@ -329,6 +396,11 @@ export class Stage {
       ry += 0.06;
     }
 
+    x += variant.sideBias * 0.12;
+    y += variant.verticalBias * 0.12;
+    z += variant.depthBias * 0.08;
+    rz += variant.rollBias * 0.25;
+
     if (this.activeBeat.scene === key) {
       group.position.x = lerp(group.position.x, base.position.x + x * offsetScale, 0.08);
       group.position.y = lerp(group.position.y, base.position.y + y * offsetScale, 0.08);
@@ -351,7 +423,7 @@ export class Stage {
 
   _updateCamera(t) {
     const beatProgress = this.activeBeat.progress || 0;
-    const { shotType, transitionType, shot, transition } = this._getShotProfile();
+    const { shotType, transitionType, shot, transition, variant } = this._getShotProfile();
     this.tmpPosition.set(0, 0, 0);
     this.tmpLookAt.set(0, 0, 0);
 
@@ -382,12 +454,12 @@ export class Stage {
     const cinematicPush = beatProgress - 0.5;
     const sceneOffset = this._getSceneFocusOffset(this.activeBeat.scene, shotType);
 
-    this.tmpPosition.x += velocityNudge * 0.12 + globalDrift * shot.drift + cinematicPush * 0.18 + shot.side + sceneOffset.pos.x;
-    this.tmpPosition.y += verticalLift + beatWave * 0.1 + shot.height + sceneOffset.pos.y;
-    this.tmpPosition.z += Math.cos(this.scroll.progress * Math.PI * 2.0) * 0.24 + shot.distance - beatWave * 0.18 + sceneOffset.pos.z;
+    this.tmpPosition.x += velocityNudge * 0.12 + globalDrift * shot.drift * variant.driftBias + cinematicPush * 0.18 + shot.side + sceneOffset.pos.x + variant.sideBias * 0.46;
+    this.tmpPosition.y += verticalLift + beatWave * 0.1 + shot.height + sceneOffset.pos.y + variant.verticalBias * 0.34;
+    this.tmpPosition.z += Math.cos(this.scroll.progress * Math.PI * 2.0) * 0.24 + shot.distance - beatWave * 0.18 + sceneOffset.pos.z + variant.depthBias * 0.4;
 
-    this.tmpLookAt.x += velocityNudge * 0.045 + sceneOffset.look.x;
-    this.tmpLookAt.y += Math.sin(t * 0.25 + this.scroll.progress * 2.4) * 0.08 + beatWave * 0.06 + shot.lookLift + sceneOffset.look.y;
+    this.tmpLookAt.x += velocityNudge * 0.045 + sceneOffset.look.x + variant.sideBias * 0.16;
+    this.tmpLookAt.y += Math.sin(t * 0.25 + this.scroll.progress * 2.4) * 0.08 + beatWave * 0.06 + shot.lookLift + sceneOffset.look.y + variant.verticalBias * 0.14;
     this.tmpLookAt.z += sceneOffset.look.z;
 
     if (shotType === 'push') {
@@ -410,6 +482,53 @@ export class Stage {
     if (transitionType === 'stretch') {
       this.tmpPosition.z += transitionPhase * 0.35;
     }
+    if (transitionType === 'bleed-up') {
+      this.tmpPosition.y += transitionPhase * 0.22;
+      this.tmpLookAt.y += transitionPhase * 0.18;
+    }
+    if (transitionType === 'glow-dissolve') {
+      this.tmpPosition.z -= transitionPhase * 0.26;
+      this.tmpLookAt.y += transitionPhase * 0.08;
+    }
+    if (transitionType === 'tilt-drop' || transitionType === 'impact-drop') {
+      this.tmpPosition.y -= transitionPhase * 0.28;
+      this.tmpLookAt.y -= transitionPhase * 0.2;
+    }
+    if (transitionType === 'streak-blur') {
+      this.tmpPosition.x += Math.sin(t * 1.6 * variant.driftBias) * 0.24 * transitionPhase;
+      this.tmpLookAt.x += Math.cos(t * 1.35 * variant.driftBias) * 0.12 * transitionPhase;
+    }
+    if (transitionType === 'layered-dissolve') {
+      this.tmpPosition.x += variant.sideBias * transitionPhase * 0.42;
+      this.tmpPosition.z += transitionPhase * 0.12;
+    }
+    if (transitionType === 'audio-warp') {
+      this.tmpPosition.x += Math.sin(t * 2.3 * variant.driftBias) * 0.12 * transitionPhase;
+      this.tmpPosition.y += Math.cos(t * 1.9 * variant.driftBias) * 0.06 * transitionPhase;
+    }
+    if (transitionType === 'heartbeat' || transitionType === 'flicker') {
+      const pulse = Math.sin(t * (transitionType === 'heartbeat' ? 2.6 : 3.2)) * 0.05 * transitionPhase;
+      this.tmpPosition.z += pulse;
+    }
+    if (transitionType === 'decelerate') {
+      this.tmpPosition.z += transitionPhase * 0.12;
+      this.tmpPosition.x *= 1 - transitionPhase * 0.08;
+    }
+    if (transitionType === 'frame-glitch') {
+      this.tmpPosition.x += Math.sin(t * 7.0) * 0.03 * transitionPhase;
+      this.tmpPosition.y += Math.cos(t * 5.2) * 0.02 * transitionPhase;
+    }
+    if (transitionType === 'horizon-bend') {
+      this.tmpLookAt.x += variant.sideBias * 0.22 * transitionPhase;
+      this.tmpLookAt.y -= transitionPhase * 0.05;
+    }
+    if (transitionType === 'fade-out') {
+      this.tmpPosition.z += transitionPhase * 0.3;
+      this.tmpLookAt.y -= transitionPhase * 0.04;
+    }
+    if (transitionType === 'air-drift') {
+      this.tmpPosition.x += Math.sin(t * 0.9 + variant.sideBias * 4) * 0.08 * transitionPhase;
+    }
 
     this.targetFov = lerp(this.targetFov, shot.fov, 0.08);
     this.camera.fov = lerp(this.camera.fov, this.targetFov, 0.12);
@@ -418,16 +537,16 @@ export class Stage {
     this.lookTarget.lerp(this.tmpLookAt, 0.08);
     this.camera.lookAt(this.lookTarget);
     this.baseQuaternion.copy(this.camera.quaternion);
-    this.tmpEuler.set(0, 0, shot.roll * (1.0 - transitionPhase * 0.35));
+    this.tmpEuler.set(0, 0, (shot.roll + variant.rollBias) * (1.0 - transitionPhase * 0.35));
     this.targetQuaternion.setFromEuler(this.tmpEuler);
     this.camera.quaternion.multiply(this.targetQuaternion);
     this.camera.quaternion.slerp(this.baseQuaternion, 0.88);
-    this._applyBeatOverlay(beatProgress, shotType, transition);
+    this._applyBeatOverlay(beatProgress, shotType, transition, variant);
   }
 
   _tick() {
     const t = this.clock.getElapsedTime();
-    const { shotType } = this._getShotProfile();
+    const { shotType, variant } = this._getShotProfile();
 
     Object.entries(this.sceneStates).forEach(([key, state]) => {
       state.intensity = lerp(state.intensity, state.targetIntensity, 0.085);
@@ -439,7 +558,7 @@ export class Stage {
         dominant: key === this.dominantKey,
       });
       this.visuals[key].update(t, this.scroll, state);
-      this._applyVisualRig(key, this.visuals[key], shotType, this.activeBeat.progress || 0, t);
+      this._applyVisualRig(key, this.visuals[key], shotType, this.activeBeat.progress || 0, t, variant);
     });
 
     this.scene.fog = this.sceneStates.boat.intensity > 0.04 ? this.visuals.boat.fog : null;
