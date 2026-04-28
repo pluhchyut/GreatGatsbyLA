@@ -1,5 +1,10 @@
-// App entry. Builds the scrolling DOM from poem.js, sets up Locomotive Scroll,
-// initializes the Three.js stage, and wires scroll position to scene blending.
+// App entry. Builds the scrolling DOM from poem.js, initializes the Three.js
+// stage, and wires native scroll position to scene blending. Locomotive
+// Scroll's smooth mode was unreliable on this layout (its `scroll` event
+// stayed silent on first paint, leaving every chapter frozen on the green
+// light). We use native scroll + RAF + IntersectionObserver instead — that's
+// what actually drives the chapter chrome, the scene crossfades, and the
+// `is-inview` text reveals.
 
 import { Stage } from './scene.js';
 import { sections } from './poem.js';
@@ -38,24 +43,16 @@ function buildDom() {
       el.className = 'hero';
       el.dataset.scene = s.scene;
       el.dataset.chapter = s.chapter;
-      el.dataset.scroll = '';
-      el.dataset.scrollSection = '';
       el.innerHTML = `
-        <div class="hero-interface hero-interface--top" data-scroll data-scroll-speed="2">
+        <div class="hero-interface hero-interface--top">
           <span>boot sector // west egg</span>
           <span>${chapter.code}</span>
         </div>
-        <div class="hero-eyebrow" data-scroll data-scroll-speed="1">
-          F. Scott Fitzgerald · 1925
-        </div>
-        <h1 class="hero-title" data-scroll data-scroll-speed="-1">
-          The Green<span class="amp">&</span>Light
-        </h1>
-        <div class="hero-subtitle" data-scroll data-scroll-speed="1">
-          a poem for Jay Gatsby
-        </div>
-        <div class="hero-flourish" data-scroll data-scroll-speed="2"></div>
-        <div class="hero-interface hero-interface--bottom" data-scroll data-scroll-speed="-1">
+        <div class="hero-eyebrow">F. Scott Fitzgerald · 1925</div>
+        <h1 class="hero-title">The Green<span class="amp">&</span>Light</h1>
+        <div class="hero-subtitle">a poem for Jay Gatsby</div>
+        <div class="hero-flourish"></div>
+        <div class="hero-interface hero-interface--bottom">
           <span>procedural chapter artifact</span>
           <span>smooth scroll / six scenes / one canvas</span>
         </div>
@@ -75,8 +72,6 @@ function buildDom() {
       el.dataset.entryId = String(entryIdx);
       el.dataset.shot = s.shot;
       el.dataset.transition = s.transition;
-      el.dataset.scroll = '';
-      el.dataset.scrollSection = '';
 
       let html;
       if (lineIdx === 1) {
@@ -87,16 +82,13 @@ function buildDom() {
       }
 
       el.innerHTML = `
-        <div class="poem-shell" data-scroll data-scroll-speed="${i % 2 === 0 ? 1 : -1}">
-          <div class="poem-meta" data-scroll data-scroll-class="is-inview" data-scroll-repeat>
+        <div class="poem-shell">
+          <div class="poem-meta reveal">
             <span>${String(entryIdx).padStart(2, '0')}</span>
             <span>${chapter.code}</span>
             <span>${chapter.name}</span>
           </div>
-          <p class="poem-line" data-scroll data-scroll-class="is-inview"
-             data-scroll-repeat>
-            ${html}
-          </p>
+          <p class="poem-line reveal">${html}</p>
         </div>
       `;
       root.appendChild(el);
@@ -108,15 +100,9 @@ function buildDom() {
       el.className = 'end-section';
       el.dataset.scene = s.scene;
       el.dataset.chapter = s.chapter;
-      el.dataset.scroll = '';
-      el.dataset.scrollSection = '';
       el.innerHTML = `
-        <div class="end-mark" data-scroll data-scroll-class="is-inview" data-scroll-repeat>
-          ${s.text}
-        </div>
-        <div class="end-credit" data-scroll data-scroll-class="is-inview" data-scroll-repeat>
-          poem &amp; visuals · in memory of Jay Gatsby
-        </div>
+        <div class="end-mark reveal">${s.text}</div>
+        <div class="end-credit reveal">poem &amp; visuals · in memory of Jay Gatsby</div>
       `;
       root.appendChild(el);
     }
@@ -127,7 +113,6 @@ function boot() {
   buildDom();
 
   const stage = new Stage(document.getElementById('three-canvas'));
-  const root = document.getElementById('scroll-container');
   const sectionEls = Array.from(document.querySelectorAll('[data-scene]'));
   const progressFill = document.getElementById('progress-fill');
   const chapterRoman = document.getElementById('chapter-roman');
@@ -142,40 +127,41 @@ function boot() {
     VISUAL_KEYS.map((key) => [key, sectionEls.filter((el) => el.dataset.scene === key)]),
   );
 
-  // eslint-disable-next-line no-undef
-  const scroll = new LocomotiveScroll({
-    el: root,
-    smooth: true,
-    lerp: 0.07,
-    multiplier: 0.92,
-    touchMultiplier: 1.2,
-    getDirection: true,
-    getSpeed: true,
-    smartphone: { smooth: true, multiplier: 1.0 },
-    tablet: { smooth: true, multiplier: 0.95 },
-  });
+  // ---------- Reveal-on-enter via IntersectionObserver ----------
+  // Replaces Locomotive's `is-inview`. Triggers when any portion of the
+  // element crosses 25% of the viewport.
+  const reveals = Array.from(document.querySelectorAll('.reveal'));
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) e.target.classList.add('is-inview');
+        else e.target.classList.remove('is-inview');
+      });
+    }, { rootMargin: '-15% 0px -15% 0px', threshold: 0 });
+    reveals.forEach((el) => io.observe(el));
+  } else {
+    reveals.forEach((el) => el.classList.add('is-inview'));
+  }
 
-  let lastChapterKey = 'shoreline';
+  let lastChapterKey = '';
   let lastBeatId = '';
-  let latestInstance = null;
-  let rafPending = false;
   let lastY = 0;
   let lastTime = performance.now();
+  let velocityEMA = 0;
+
   const bootMessages = [
     'bootrom // west egg archive // preparing scene memory',
-    'locomotive sync // calibrating chapter drift',
+    'native scroll // calibrating chapter drift',
     'three canvas // resolving water, fog, and gold',
     'signal stable // awaiting reader input',
   ];
   let bootIndex = 0;
   const bootTicker = window.setInterval(() => {
     bootIndex = (bootIndex + 1) % bootMessages.length;
-    loaderStatus.textContent = bootMessages[bootIndex];
+    if (loaderStatus) loaderStatus.textContent = bootMessages[bootIndex];
   }, 950);
 
-  function measureSceneState() {
-    rafPending = false;
-
+  function measureAll() {
     const vh = window.innerHeight;
     const center = vh * 0.5;
     const states = Object.fromEntries(
@@ -194,7 +180,7 @@ function boot() {
         const rect = el.getBoundingClientRect();
         const elCenter = rect.top + rect.height * 0.5;
         const distance = Math.abs(elCenter - center);
-        const influence = clamp(1 - distance / (vh * 0.95), 0, 1) ** 2.2;
+        const influence = clamp(1 - distance / (vh * 0.95), 0, 1) ** 2.0;
         const localProgress = clamp((center - rect.top) / Math.max(rect.height, vh * 0.7), 0, 1);
 
         if (distance < activeDistance) {
@@ -233,69 +219,59 @@ function boot() {
 
     if (chapterKey !== lastChapterKey) {
       const info = CHAPTER_INFO[chapterKey];
-      chapterRoman.textContent = info.roman;
-      chapterName.textContent = info.name;
-      chapterCode.textContent = info.code;
-      systemCode.textContent = `${info.code} // ${info.name}`;
+      if (info) {
+        if (chapterRoman) chapterRoman.textContent = info.roman;
+        if (chapterName) chapterName.textContent = info.name;
+        if (chapterCode) chapterCode.textContent = info.code;
+        if (systemCode) systemCode.textContent = `${info.code} // ${info.name}`;
+      }
       lastChapterKey = chapterKey;
     }
 
     if (activeSection?.dataset.entryId && activeSection.dataset.entryId !== lastBeatId) {
-      shotTitle.textContent = activeSection.dataset.shot || '';
-      shotTransition.textContent = activeSection.dataset.transition || '';
+      if (shotTitle) shotTitle.textContent = activeSection?.dataset.shot || '';
+      if (shotTransition) shotTransition.textContent = activeSection?.dataset.transition || '';
       lastBeatId = activeSection.dataset.entryId;
     }
-  }
 
-  function syncScrollMetrics(instance) {
+    // Native scroll progress + velocity
+    const docH = Math.max(1, document.documentElement.scrollHeight - vh);
+    const y = window.scrollY || document.documentElement.scrollTop || 0;
+    const progress = clamp(y / docH, 0, 1);
     const now = performance.now();
-    const y = instance?.scroll?.y ?? 0;
-    const limit = instance?.limit?.y || instance?.limit || 1;
-    const progress = clamp(y / limit, 0, 1);
     const dt = Math.max(16, now - lastTime);
-    const velocity = instance?.speed ?? ((y - lastY) / dt) * 16.0;
-    const direction = instance?.direction === 'up' ? -1 : 1;
+    const inst = ((y - lastY) / dt) * 16.0;
+    velocityEMA = velocityEMA * 0.85 + inst * 0.15;
+    const direction = inst >= 0 ? 1 : -1;
 
-    stage.setScrollMetrics({ progress, velocity, direction });
-    progressFill.style.transform = `scaleY(${progress})`;
+    stage.setScrollMetrics({ progress, velocity: velocityEMA, direction });
+    if (progressFill) progressFill.style.transform = `scaleY(${progress})`;
 
     lastY = y;
     lastTime = now;
   }
 
-  function requestMeasure() {
-    if (rafPending) return;
-    rafPending = true;
-    requestAnimationFrame(measureSceneState);
+  function rafLoop() {
+    measureAll();
+    requestAnimationFrame(rafLoop);
+  }
+  requestAnimationFrame(rafLoop);
+
+  // Hide loader when load fires (or on a fallback timer in case `load` was
+  // already past by the time this script attached).
+  const hideLoader = () => {
+    window.clearInterval(bootTicker);
+    const loader = document.getElementById('loader');
+    if (loader) loader.classList.add('hidden');
+  };
+  if (document.readyState === 'complete') {
+    setTimeout(hideLoader, 500);
+  } else {
+    window.addEventListener('load', () => setTimeout(hideLoader, 500), { once: true });
+    setTimeout(hideLoader, 4000); // ultimate fallback
   }
 
-  scroll.on('scroll', (instance) => {
-    latestInstance = instance;
-    syncScrollMetrics(instance);
-    requestMeasure();
-  });
-
-  requestAnimationFrame(() => {
-    latestInstance = scroll.scroll?.instance || latestInstance;
-    if (latestInstance) syncScrollMetrics(latestInstance);
-    measureSceneState();
-  });
-
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      window.clearInterval(bootTicker);
-      document.getElementById('loader').classList.add('hidden');
-      scroll.update();
-      latestInstance = scroll.scroll?.instance || latestInstance;
-      if (latestInstance) syncScrollMetrics(latestInstance);
-      measureSceneState();
-    }, 700);
-  });
-
-  window.addEventListener('resize', () => {
-    scroll.update();
-    requestMeasure();
-  });
+  window.addEventListener('resize', () => measureAll());
 }
 
 boot();
