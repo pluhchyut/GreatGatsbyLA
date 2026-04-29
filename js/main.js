@@ -118,8 +118,6 @@ function boot() {
   const chapterCode = document.getElementById('chapter-code');
   const systemCode = document.getElementById('system-code');
   const loaderStatus = document.getElementById('loader-status');
-  const shotTitle = document.getElementById('shot-title');
-  const shotTransition = document.getElementById('shot-transition');
 
   const sectionsByScene = Object.fromEntries(
     VISUAL_KEYS.map((key) => [key, sectionEls.filter((el) => el.dataset.scene === key)]),
@@ -245,8 +243,6 @@ function boot() {
     }
 
     if (activeSection?.dataset.entryId && activeSection.dataset.entryId !== lastBeatId) {
-      if (shotTitle) shotTitle.textContent = activeSection?.dataset.shot || '';
-      if (shotTransition) shotTransition.textContent = activeSection?.dataset.transition || '';
       lastBeatId = activeSection.dataset.entryId;
     }
 
