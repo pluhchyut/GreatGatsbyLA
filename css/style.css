@@ -37,6 +37,14 @@ html, body {
 html { scroll-behavior: auto; }
 body { overflow-x: hidden; }
 
+/* Override locomotive-scroll's CDN CSS that hard-locks overflow:hidden when
+   smooth mode boots. We rely on native scroll as the single source of truth
+   for measurement, with locomotive layering smoothness on top. */
+html.has-scroll-smooth,
+.has-scroll-smooth body {
+  overflow: visible !important;
+}
+
 html.has-scroll-dragging { user-select: none; }
 [data-scroll-container] {
   min-height: 100vh;

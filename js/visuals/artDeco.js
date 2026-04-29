@@ -1,5 +1,9 @@
-// Daisy is now a readable human memory: a soft figure in warm light, smiling
-// faintly and waving from a distance as if Gatsby can almost reach her.
+// Daisy as a 2D black flapper silhouette over a warm gold backdrop.
+// Her smile and eyes are TRANSPARENT cutouts in the silhouette, so the
+// warm light behind shines through her face — the effect of a memory
+// almost coming back. One arm waves slowly, like someone calling from
+// across the bay. Everything else here (gold backdrop, sweeping cream
+// trails, drifting dust) is the dream pretending to be a person.
 
 import * as THREE from 'three';
 
@@ -10,137 +14,83 @@ export class ArtDecoScene {
     this.intensity = 0;
     this.progress = 0;
 
+    // ---- Lighting (subtle: silhouette is unlit, but glints/dust react) ----
     this.ambient = new THREE.AmbientLight(0x263142, 0);
     this.keyLight = new THREE.DirectionalLight(0xffefc8, 0);
     this.keyLight.position.set(3.5, 5.0, 6.5);
-    this.rimLight = new THREE.DirectionalLight(0xf0cf65, 0);
-    this.rimLight.position.set(-3.5, 2.5, -3.5);
     this.greenFill = new THREE.DirectionalLight(0x4dffaa, 0);
     this.greenFill.position.set(-5.0, 1.0, 4.0);
 
+    // ---- Warm gold backdrop (this is what shows through Daisy's smile) ----
     this.backGlowMat = new THREE.SpriteMaterial({
-      map: this._radialTex('rgba(244,233,216,0.85)', 'rgba(244,233,216,0)'),
-      color: 0xd8b15a,
+      map: this._radialTex('rgba(255,228,168,1)', 'rgba(212,175,55,0)'),
+      color: 0xf0cf65,
       transparent: true,
       opacity: 0,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
     this.backGlow = new THREE.Sprite(this.backGlowMat);
-    this.backGlow.position.set(0, 1.6, -8.6);
-    this.backGlow.scale.set(12, 12, 1);
+    this.backGlow.position.set(0, 1.55, -8.6);
+    this.backGlow.scale.set(14, 14, 1);
 
-    this.figure = new THREE.Group();
-    this.figure.position.set(0.45, 1.05, -5.9);
-    this.figure.rotation.y = -0.28;
-
-    this.skinMat = new THREE.MeshStandardMaterial({
-      color: 0xf4d7ba,
-      roughness: 0.62,
-      transparent: true,
-      opacity: 0,
-    });
-    this.hairMat = new THREE.MeshStandardMaterial({
-      color: 0xd7b15a,
-      roughness: 0.75,
-      transparent: true,
-      opacity: 0,
-    });
-    this.dressMat = new THREE.MeshStandardMaterial({
-      color: 0xf4e9d8,
-      roughness: 0.82,
-      transparent: true,
-      opacity: 0,
-      side: THREE.DoubleSide,
-    });
-    this.shadowMat = new THREE.MeshBasicMaterial({
-      color: 0x07101c,
-      transparent: true,
-      opacity: 0,
-      side: THREE.DoubleSide,
-    });
-    this.goldLineMat = new THREE.LineBasicMaterial({
-      color: 0xf0cf65,
-      transparent: true,
-      opacity: 0,
-    });
-    this.greenLineMat = new THREE.LineBasicMaterial({
-      color: 0x4dffaa,
-      transparent: true,
-      opacity: 0,
-    });
-
-    this.head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 32, 24), this.skinMat);
-    this.head.position.set(0, 1.48, 0);
-    this.head.scale.set(0.86, 1.02, 0.78);
-
-    this.hair = new THREE.Mesh(new THREE.SphereGeometry(0.38, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.56), this.hairMat);
-    this.hair.position.set(0, 1.58, -0.02);
-    this.hair.scale.set(0.96, 0.72, 0.78);
-    this.hair.rotation.x = 0.2;
-
-    const dressShape = new THREE.Shape();
-    dressShape.moveTo(-0.34, 0.98);
-    dressShape.bezierCurveTo(-0.74, 0.48, -0.9, -0.1, -1.0, -0.86);
-    dressShape.lineTo(0.96, -0.86);
-    dressShape.bezierCurveTo(0.86, -0.1, 0.68, 0.48, 0.34, 0.98);
-    dressShape.bezierCurveTo(0.18, 1.13, -0.18, 1.13, -0.34, 0.98);
-    const dressGeo = new THREE.ShapeGeometry(dressShape, 28);
-    this.dress = new THREE.Mesh(dressGeo, this.dressMat);
-    this.dress.position.set(0, 0.24, 0);
-    this.dress.scale.set(0.72, 0.86, 1);
-
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.22, 14), this.skinMat);
-    neck.position.set(0, 1.15, 0);
-
-    const armGeo = new THREE.CylinderGeometry(0.035, 0.042, 0.72, 12);
-    armGeo.translate(0, -0.36, 0);
-    this.leftArm = new THREE.Mesh(armGeo, this.skinMat);
-    this.leftArm.position.set(-0.42, 0.94, 0.02);
-    this.leftArm.rotation.z = -0.32;
-
-    this.wavePivot = new THREE.Group();
-    this.wavePivot.position.set(0.38, 0.94, 0.02);
-    this.rightArm = new THREE.Mesh(armGeo.clone(), this.skinMat);
-    this.rightArm.rotation.z = -2.38;
-    this.rightArm.rotation.x = 0.06;
-    this.wavePivot.add(this.rightArm);
-
-    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 10), this.skinMat);
-    palm.position.set(0, -0.74, 0.0);
-    this.rightArm.add(palm);
-
-    const eyeGeo = new THREE.SphereGeometry(0.018, 8, 8);
-    this.leftEye = new THREE.Mesh(eyeGeo, this.shadowMat);
-    this.leftEye.position.set(-0.095, 1.51, 0.285);
-    this.rightEye = new THREE.Mesh(eyeGeo, this.shadowMat);
-    this.rightEye.position.set(0.095, 1.51, 0.285);
-
-    this.smile = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-0.09, 1.41, 0.305),
-        new THREE.Vector3(-0.025, 1.385, 0.322),
-        new THREE.Vector3(0.055, 1.395, 0.318),
-        new THREE.Vector3(0.11, 1.43, 0.302),
-      ]),
-      this.goldLineMat,
-    );
-
-    this.greenEyeGlint = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: this._radialTex('rgba(77,255,170,0.9)', 'rgba(77,255,170,0)'),
-      color: 0x4dffaa,
+    // A second, hotter glow precisely behind her face — when her smile cutout
+    // shows, this is the gold that shines through. Its opacity rises with
+    // chapter progress.
+    this.faceGlowMat = new THREE.SpriteMaterial({
+      map: this._radialTex('rgba(255,235,180,1)', 'rgba(255,200,90,0)'),
+      color: 0xffe4a8,
       transparent: true,
       opacity: 0,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-    }));
-    this.greenEyeGlint.position.set(0.13, 1.52, 0.32);
-    this.greenEyeGlint.scale.set(0.22, 0.22, 1);
+    });
+    this.faceGlow = new THREE.Sprite(this.faceGlowMat);
+    this.faceGlow.position.set(0.45, 2.18, -6.45); // behind Daisy's head
+    this.faceGlow.scale.set(2.2, 2.2, 1);
 
+    // ---- Daisy: 2D silhouette ----
+    // The body is on its own subgroup so the whole figure can sway.
+    this.figure = new THREE.Group();
+    this.figure.position.set(0.45, 1.0, -6.0);
+    this.figure.rotation.y = 0;
+
+    const bodyTex = this._makeDaisyBodyTexture();
+    this.bodyMat = new THREE.MeshBasicMaterial({
+      map: bodyTex,
+      color: 0x000000,
+      transparent: true,
+      alphaTest: 0.04,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    this.body = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 3.6), this.bodyMat);
+    this.body.position.set(0, 0.6, 0);
+
+    // Waving arm — separate plane, pivoted at the right shoulder so it can
+    // rotate freely without distorting the body silhouette.
+    const armTex = this._makeDaisyArmTexture();
+    this.armMat = new THREE.MeshBasicMaterial({
+      map: armTex,
+      color: 0x000000,
+      transparent: true,
+      alphaTest: 0.04,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    this.armPivot = new THREE.Group();
+    // Right shoulder of the silhouette in figure-local coords.
+    this.armPivot.position.set(0.32, 1.55, 0.01);
+    this.arm = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 1.05), this.armMat);
+    // Anchor the arm so the pivot is at its TOP (shoulder), and it hangs down.
+    this.arm.position.set(0, -0.46, 0);
+    this.armPivot.add(this.arm);
+
+    // ---- Cream / gold motion trails behind her — the dream's blur ----
     this.trails = new THREE.Group();
     this.trailMaterials = [];
     for (let i = 0; i < 4; i += 1) {
-      const trailGeo = new THREE.PlaneGeometry(1.0 + i * 0.18, 2.7 + i * 0.18, 12, 18);
+      const trailGeo = new THREE.PlaneGeometry(1.1 + i * 0.18, 2.9 + i * 0.18, 12, 18);
       const pos = trailGeo.attributes.position;
       for (let j = 0; j < pos.count; j += 1) {
         const y = pos.getY(j);
@@ -153,9 +103,10 @@ export class ArtDecoScene {
         opacity: 0,
         side: THREE.DoubleSide,
         depthWrite: false,
+        blending: THREE.AdditiveBlending,
       });
       const trail = new THREE.Mesh(trailGeo, mat);
-      trail.position.set(-0.16 + i * 0.12, 0.42 - i * 0.05, -0.5 - i * 0.32);
+      trail.position.set(-0.18 + i * 0.13, 0.42 - i * 0.05, -0.55 - i * 0.34);
       trail.rotation.y = -0.16 + i * 0.1;
       trail.userData.seed = Math.random() * Math.PI * 2;
       trail.userData.basePosition = trail.position.clone();
@@ -165,31 +116,243 @@ export class ArtDecoScene {
 
     this.dust = this._makeDust();
 
-    this.figure.add(
-      this.trails,
-      this.dress,
-      neck,
-      this.leftArm,
-      this.wavePivot,
-      this.head,
-      this.hair,
-      this.leftEye,
-      this.rightEye,
-      this.smile,
-      this.greenEyeGlint,
-    );
+    this.figure.add(this.trails, this.body, this.armPivot);
 
     this.group.add(
       this.ambient,
       this.keyLight,
-      this.rimLight,
       this.greenFill,
       this.backGlow,
+      this.faceGlow,
       this.figure,
       this.dust,
     );
     this.group.visible = false;
     scene.add(this.group);
+  }
+
+  // ----- Daisy's body silhouette: pure black, distinctly a 1920s woman.
+  //       Bob hair with side curls, defined bust + cinched waist + hip flare,
+  //       long pearl necklace, eyelash flicks, and a small bow in the hair.
+  //       Smile + eyes are punched OUT so the warm gold behind shows through. -----
+  _makeDaisyBodyTexture() {
+    const W = 256;
+    const H = 512;
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#000';
+
+    const cx = W / 2;
+
+    // ---------- Hair (bob with side curls, slight finger-wave shape) ----------
+    ctx.beginPath();
+    // Top crown
+    ctx.moveTo(cx - 68, H * 0.165);
+    ctx.bezierCurveTo(
+      cx - 80, H * 0.075,  cx + 80, H * 0.075,  cx + 68, H * 0.165,
+    );
+    // Right side curl flicking outward at the cheek
+    ctx.bezierCurveTo(
+      cx + 84, H * 0.190,  cx + 84, H * 0.250,  cx + 60, H * 0.272,
+    );
+    // Inward tuck up to jaw
+    ctx.lineTo(cx + 30, H * 0.270);
+    // Chin curve
+    ctx.bezierCurveTo(
+      cx + 20, H * 0.300,  cx - 20, H * 0.300,  cx - 30, H * 0.270,
+    );
+    // Left jaw
+    ctx.lineTo(cx - 60, H * 0.272);
+    // Left side curl
+    ctx.bezierCurveTo(
+      cx - 84, H * 0.250,  cx - 84, H * 0.190,  cx - 68, H * 0.165,
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // ---------- Neck (slim) ----------
+    ctx.fillRect(cx - 10, H * 0.295, 20, 22);
+
+    // ---------- Body: bust → cinched waist → flared dress ----------
+    ctx.beginPath();
+    // Right shoulder
+    ctx.moveTo(cx + 52, H * 0.320);
+    // Bust curve out
+    ctx.bezierCurveTo(
+      cx + 78, H * 0.355,
+      cx + 80, H * 0.430,
+      cx + 60, H * 0.460,
+    );
+    // Pull in to narrow waist
+    ctx.bezierCurveTo(
+      cx + 50, H * 0.485,
+      cx + 38, H * 0.510,
+      cx + 36, H * 0.555,
+    );
+    // Hip flare into long dress
+    ctx.bezierCurveTo(
+      cx + 50, H * 0.610,
+      cx + 86, H * 0.760,
+      cx + 110, H * 0.985,
+    );
+    // Hem (full width)
+    ctx.lineTo(cx - 110, H * 0.985);
+    // Mirror left
+    ctx.bezierCurveTo(
+      cx - 86, H * 0.760,
+      cx - 50, H * 0.610,
+      cx - 36, H * 0.555,
+    );
+    ctx.bezierCurveTo(
+      cx - 38, H * 0.510,
+      cx - 50, H * 0.485,
+      cx - 60, H * 0.460,
+    );
+    ctx.bezierCurveTo(
+      cx - 80, H * 0.430,
+      cx - 78, H * 0.355,
+      cx - 52, H * 0.320,
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // ---------- Left arm down at her side ----------
+    ctx.beginPath();
+    ctx.moveTo(cx - 60, H * 0.330);
+    ctx.bezierCurveTo(
+      cx - 80, H * 0.420,
+      cx - 90, H * 0.500,
+      cx - 80, H * 0.580,
+    );
+    // Hand
+    ctx.bezierCurveTo(
+      cx - 70, H * 0.605,
+      cx - 60, H * 0.605,
+      cx - 64, H * 0.580,
+    );
+    ctx.bezierCurveTo(
+      cx - 70, H * 0.500,
+      cx - 60, H * 0.420,
+      cx - 50, H * 0.330,
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // ---------- Heels peeking under the dress hem ----------
+    ctx.beginPath();
+    ctx.moveTo(cx - 22, H * 0.985);
+    ctx.lineTo(cx - 16, H * 1.000);
+    ctx.lineTo(cx - 6,  H * 0.985);
+    ctx.closePath();
+    ctx.moveTo(cx + 22, H * 0.985);
+    ctx.lineTo(cx + 16, H * 1.000);
+    ctx.lineTo(cx + 6,  H * 0.985);
+    ctx.closePath();
+    ctx.fill();
+
+    // ---------- CUTOUTS — face features + pearls + bow accent ----------
+    ctx.globalCompositeOperation = 'destination-out';
+
+    // Eyes — almond shape, pulled slightly upward with a gentle lash flick
+    ctx.beginPath();
+    ctx.ellipse(cx - 13, H * 0.218, 5.2, 2.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + 13, H * 0.218, 5.2, 2.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lash flicks at the outer corners
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.beginPath();
+    ctx.moveTo(cx - 18, H * 0.219);
+    ctx.lineTo(cx - 23, H * 0.213);
+    ctx.moveTo(cx + 18, H * 0.219);
+    ctx.lineTo(cx + 23, H * 0.213);
+    ctx.stroke();
+
+    // Smile — fuller curved lips
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(cx, H * 0.255, 13, 0.20, Math.PI - 0.20);
+    ctx.stroke();
+
+    // Pearl necklace — a gentle U arc of tiny round cutouts across the chest
+    for (let i = -5; i <= 5; i += 1) {
+      const x = cx + i * 7;
+      const y = H * 0.330 + Math.abs(i) * 1.4;
+      ctx.beginPath();
+      ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Long sautoir loop down to the waist
+    for (let i = 0; i < 9; i += 1) {
+      ctx.beginPath();
+      ctx.arc(cx - 1, H * (0.355 + i * 0.018), 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // A small bow/hair clip at the top of the head — two tiny triangles
+    ctx.beginPath();
+    ctx.moveTo(cx - 6,  H * 0.110);
+    ctx.lineTo(cx - 18, H * 0.092);
+    ctx.lineTo(cx - 18, H * 0.124);
+    ctx.closePath();
+    ctx.moveTo(cx + 6,  H * 0.110);
+    ctx.lineTo(cx + 18, H * 0.092);
+    ctx.lineTo(cx + 18, H * 0.124);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.globalCompositeOperation = 'source-over';
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    return tex;
+  }
+
+  // ----- The waving arm: a tapered black shape with a small palm at the
+  //       end. Anchored so the texture's TOP center is the rotation pivot. -----
+  _makeDaisyArmTexture() {
+    const W = 64;
+    const H = 256;
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#000';
+
+    // Upper arm + forearm — gentle taper
+    ctx.beginPath();
+    ctx.moveTo(W * 0.40, 0);
+    ctx.lineTo(W * 0.34, H * 0.55);
+    ctx.lineTo(W * 0.34, H * 0.90);
+    ctx.lineTo(W * 0.66, H * 0.90);
+    ctx.lineTo(W * 0.66, H * 0.55);
+    ctx.lineTo(W * 0.60, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Palm — a small circle at the wrist end
+    ctx.beginPath();
+    ctx.arc(W * 0.5, H * 0.93, W * 0.30, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Faint fingers (a few small bumps so the palm reads)
+    ctx.beginPath();
+    ctx.arc(W * 0.5 - W * 0.12, H * 0.985, W * 0.06, 0, Math.PI * 2);
+    ctx.arc(W * 0.5 + W * 0.0,  H * 1.00,  W * 0.06, 0, Math.PI * 2);
+    ctx.arc(W * 0.5 + W * 0.12, H * 0.985, W * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    return tex;
   }
 
   _radialTex(c0, c1) {
@@ -271,43 +434,49 @@ export class ArtDecoScene {
 
   update(t) {
     if (!this.group.visible) return;
+    const I = this.intensity;
+    const P = this.progress;
 
-    const smileWarmth = 0.7 + Math.sin(t * 0.8) * 0.08 + this.progress * 0.18;
-    const wave = Math.sin(t * 1.4 + this.progress * 2.0) * 0.22;
+    this.ambient.intensity   = I * 0.46;
+    this.keyLight.intensity  = I * (1.25 + P * 0.3);
+    this.greenFill.intensity = I * (0.14 + P * 0.18);
 
-    this.ambient.intensity = this.intensity * 0.46;
-    this.keyLight.intensity = this.intensity * (1.25 + this.progress * 0.3);
-    this.rimLight.intensity = this.intensity * 0.65;
-    this.greenFill.intensity = this.intensity * (0.14 + this.progress * 0.18);
-    this.backGlowMat.opacity = this.intensity * (0.12 + this.progress * 0.22);
+    this.backGlowMat.opacity = I * (0.35 + P * 0.25 + Math.sin(t * 0.7) * 0.04);
+    this.faceGlowMat.opacity = I * (0.55 + P * 0.30 + Math.sin(t * 1.6) * 0.05);
 
-    this.skinMat.opacity = this.intensity * 0.92;
-    this.hairMat.opacity = this.intensity * 0.9;
-    this.dressMat.opacity = this.intensity * 0.86;
-    this.shadowMat.opacity = this.intensity * 0.62;
-    this.goldLineMat.opacity = this.intensity * smileWarmth;
-    this.greenLineMat.opacity = this.intensity * (0.18 + this.progress * 0.22);
-    this.greenEyeGlint.material.opacity = this.intensity * (0.14 + Math.sin(t * 1.8) * 0.04 + this.progress * 0.08);
+    // Daisy silhouette — fades in with the chapter
+    this.bodyMat.opacity = I * 0.98;
+    this.armMat.opacity  = I * 0.98;
 
-    this.figure.position.x = 0.45 + Math.sin(t * 0.18) * 0.08;
-    this.figure.position.y = 1.05 + Math.sin(t * 0.32) * 0.05;
-    this.figure.rotation.y = -0.28 + Math.sin(t * 0.22) * 0.06;
-    this.figure.rotation.z = Math.sin(t * 0.16) * 0.02;
-    this.head.rotation.y = Math.sin(t * 0.42) * 0.08;
-    this.wavePivot.rotation.z = -0.12 + wave;
-    this.wavePivot.rotation.x = Math.sin(t * 0.75) * 0.05;
+    // Sway: she rocks gently, like someone calling across distance.
+    this.figure.position.x = 0.45 + Math.sin(t * 0.20) * 0.06;
+    this.figure.position.y = 1.00 + Math.sin(t * 0.32) * 0.04;
+    this.figure.rotation.z = Math.sin(t * 0.18) * 0.025;
+    this.body.rotation.z   = Math.sin(t * 0.45) * 0.012;
 
+    // Wave: arm raised, oscillating side to side.
+    // Base = arm raised up (≈ -1.35 rad ≈ 77°). Oscillation ±0.28 rad.
+    const waveBase = -1.35;
+    const waveOsc  = Math.sin(t * 4.4) * 0.28;
+    // A little settle-in: as the chapter starts (P≈0) the wave is small,
+    // and it grows as the chapter progresses, then steadies.
+    const waveAmt  = 0.55 + Math.min(1, P * 1.6) * 0.45;
+    this.armPivot.rotation.z = waveBase + waveOsc * waveAmt;
+    // tiny forward tilt so the arm doesn't read flat
+    this.armPivot.rotation.x = Math.sin(t * 0.9) * 0.04;
+
+    // Cream/gold sweeping trails behind her
     this.trails.children.forEach((trail, index) => {
       const base = trail.userData.basePosition;
       const sway = Math.sin(t * (0.52 + index * 0.08) + trail.userData.seed);
       trail.position.x = base.x + sway * 0.07;
       trail.position.y = base.y + Math.cos(t * 0.4 + trail.userData.seed) * 0.04;
       trail.rotation.y = -0.16 + index * 0.1 + sway * 0.05;
-      this.trailMaterials[index].opacity = this.intensity * (0.045 + index * 0.014 + this.progress * 0.024);
+      this.trailMaterials[index].opacity = I * (0.06 + index * 0.014 + P * 0.025);
     });
 
     this.dustUniforms.uTime.value = t;
-    this.dustUniforms.uOpacity.value = this.intensity * (0.28 + this.progress * 0.08);
+    this.dustUniforms.uOpacity.value = I * (0.28 + P * 0.08);
   }
 
   dispose() {
